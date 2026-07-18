@@ -14,4 +14,8 @@ coverage/
 .vite/
 .modal/
 .firecrawl/
-
+logs/
+*.log
+*.local
+.vscode/
+.idea/

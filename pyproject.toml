@@ -21,8 +21,9 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["backend"]
-testpaths = ["tests/backend"]
+testpaths = ["tests"]
 addopts = "-q"
+markers = ["remote: opt-in tests that call deployed GPU infrastructure"]
 
 [tool.ruff]
 line-length = 100

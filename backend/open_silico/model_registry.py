@@ -9,6 +9,17 @@ TECHNIQUES = (
 )
 
 
+def _techniques_for(spec: "ModelSpec") -> tuple[TechniqueSummary, ...]:
+    return tuple(
+        TechniqueSummary(
+            id=technique.id,
+            label=technique.label,
+            implementation_state="available",
+        )
+        for technique in TECHNIQUES
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class ModelSpec:
     key: str
@@ -78,7 +89,7 @@ def build_catalog(settings: Settings) -> ModelCatalog:
             revision=spec.revision,
             license_name=spec.license_name,
             access=_access_for(spec, settings),
-            techniques=TECHNIQUES,
+            techniques=_techniques_for(spec),
             default_layer=spec.default_layer,
             parameter_count=spec.parameter_count,
         )

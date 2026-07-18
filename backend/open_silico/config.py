@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     hf_access_configured: bool = False
     hf_secret_name: str = "huggingface-secret"
+    modal_jlens_app_name: str = "open-silico-jlens"
 
     @property
     def cors_origin_list(self) -> list[str]:

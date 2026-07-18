@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import './App.css'
+import { JacobianLensWorkbench } from './JacobianLensWorkbench'
+import { SteeringWorkbench } from './SteeringWorkbench'
 import {
   fetchHealth,
   fetchModelCatalog,
@@ -83,7 +85,15 @@ function LoadingShell() {
   )
 }
 
-function ModelInstrument({ model }: { model: ModelSummary }) {
+function ModelInstrument({
+  model,
+  onOpenLens,
+  onOpenSteering,
+}: {
+  model: ModelSummary
+  onOpenLens: () => void
+  onOpenSteering: () => void
+}) {
   const accessible = model.access.state === 'available'
   return (
     <>
@@ -161,8 +171,9 @@ function ModelInstrument({ model }: { model: ModelSummary }) {
         <div className="technique-deck">
           {model.techniques.map((technique) => {
             const lens = technique.id === 'jacobian_lens'
+            const available = technique.implementation_state === 'available' && accessible
             return (
-              <article className="technique-card" key={technique.id}>
+              <article className={`technique-card ${available ? 'is-available' : ''}`} key={technique.id}>
                 <span className="technique-icon"><SignalIcon kind={lens ? 'lens' : 'steer'} /></span>
                 <span className="slice-number">{lens ? 'SLICE 02' : 'SLICE 05'}</span>
                 <h4>{technique.label}</h4>
@@ -171,8 +182,8 @@ function ModelInstrument({ model }: { model: ModelSummary }) {
                     ? 'Read token-like representations across residual layers and positions.'
                     : 'Derive a contrast direction, intervene, and compare matched generations.'}
                 </p>
-                <button type="button" disabled>
-                  {lens ? 'Lens runtime queued' : 'Steering runtime queued'}
+                <button type="button" disabled={!available} onClick={lens ? onOpenLens : onOpenSteering}>
+                  {available ? `Open ${technique.label} →` : !accessible ? 'Model access required' : `${technique.label} runtime queued`}
                 </button>
               </article>
             )
@@ -189,6 +200,7 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'models' | 'jlens' | 'steering'>('models')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -214,6 +226,16 @@ function App() {
     [catalog, selectedKey],
   )
 
+  const openLens = () => {
+    if (selectedModel?.access.state !== 'available') setSelectedKey('qwen3-1.7b')
+    setView('jlens')
+  }
+
+  const openSteering = () => {
+    if (selectedModel?.access.state !== 'available') setSelectedKey('qwen3-1.7b')
+    setView('steering')
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -225,16 +247,16 @@ function App() {
           </span>
         </a>
         <nav className="technique-nav" aria-label="Primary techniques">
-          <button className="is-active" type="button">Models</button>
-          <button type="button" disabled>Jacobian Lens <span>02</span></button>
-          <button type="button" disabled>Steering <span>05</span></button>
+          <button className={view === 'models' ? 'is-active' : ''} type="button" onClick={() => setView('models')}>Models</button>
+          <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Jacobian Lens <span>02</span></button>
+          <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Steering <span>05</span></button>
         </nav>
-        <a className="issue-link" href="https://github.com/perfect7613/open-silico/issues/2" target="_blank" rel="noreferrer">
-          Build log ↗
+        <a className="issue-link" href={`https://github.com/perfect7613/open-silico/issues/${view === 'jlens' ? 5 : view === 'steering' ? 6 : 2}`} target="_blank" rel="noreferrer">
+          Slice {view === 'jlens' ? '04' : view === 'steering' ? '05' : '01'} ↗
         </a>
       </header>
 
-      <div className="workspace">
+      <div className={`workspace ${view !== 'models' ? 'is-instrument' : ''}`}>
         <aside className="model-rail" aria-labelledby="model-rail-title">
           <div className="rail-heading">
             <span className="rail-index">A—01</span>
@@ -250,7 +272,10 @@ function App() {
                 key={model.key}
                 model={model}
                 selected={model.key === selectedModel?.key}
-                onSelect={setSelectedKey}
+                onSelect={(key) => {
+                  setSelectedKey(key)
+                  setView('models')
+                }}
               />
             ))}
           </div>
@@ -261,15 +286,17 @@ function App() {
         </aside>
 
         <main className="observatory">
-          <section className="observatory-intro">
-            <div>
-              <p className="eyebrow">Open interpretability laboratory</p>
-              <h2>Inspect the machinery,<br /><em>then change one thing.</em></h2>
-            </div>
-            <p className="intro-copy">
-              A controlled surface for seeing what open models represent and testing whether those representations matter.
-            </p>
-          </section>
+          {view === 'models' && (
+            <section className="observatory-intro">
+              <div>
+                <p className="eyebrow">Open interpretability laboratory</p>
+                <h2>Inspect the machinery,<br /><em>then change one thing.</em></h2>
+              </div>
+              <p className="intro-copy">
+                A controlled surface for seeing what open models represent and testing whether those representations matter.
+              </p>
+            </section>
+          )}
 
           {loading && <LoadingShell />}
           {error && (
@@ -280,7 +307,15 @@ function App() {
               <button type="button" onClick={() => void load()}>Retry calibration</button>
             </section>
           )}
-          {!loading && !error && selectedModel && <ModelInstrument model={selectedModel} />}
+          {!loading && !error && selectedModel && view === 'models' && (
+            <ModelInstrument model={selectedModel} onOpenLens={openLens} onOpenSteering={openSteering} />
+          )}
+          {!loading && !error && selectedModel && view === 'jlens' && (
+            <JacobianLensWorkbench model={selectedModel} />
+          )}
+          {!loading && !error && selectedModel && view === 'steering' && (
+            <SteeringWorkbench model={selectedModel} />
+          )}
         </main>
       </div>
 
