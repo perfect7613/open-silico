@@ -294,7 +294,8 @@ class OpenSilicoModel:
             def add_direction(_module: Any, _inputs: Any, output: Any) -> Any:
                 hidden = _hidden_from_output(output)
                 delta = direction.to(device=hidden.device, dtype=hidden.dtype)
-                steered = hidden + request.strength * delta.view(1, 1, -1)
+                steered = hidden.clone()
+                steered[:, -1, :] = steered[:, -1, :] + request.strength * delta
                 return _replace_hidden(output, steered)
 
             handle = target_layer.register_forward_hook(add_direction)

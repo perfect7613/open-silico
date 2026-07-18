@@ -9,8 +9,27 @@ import {
 const PRESETS = {
   cats: {
     label: 'Cats mode',
-    positive: ['cats are graceful companions', 'felines purr and climb', 'a curious house cat'],
-    negative: ['dogs are loyal companions', 'canines bark and fetch', 'an energetic house dog'],
+    positive: [
+      'The animal is a cat',
+      'This story is about a kitten',
+      'The creature is a feline',
+      'The pet makes a soft purr',
+      'The sound is a gentle meow',
+      'The cat purrs contentedly',
+      'The kitten meows softly',
+      'The feline kneads and purrs',
+    ],
+    negative: [
+      'The animal is a dog',
+      'This story is about a puppy',
+      'The creature is a canine',
+      'The pet makes a loud bark',
+      'The sound is a loud woof',
+      'The dog barks excitedly',
+      'The puppy barks loudly',
+      'The canine fetches and barks',
+    ],
+    prompt: 'Choose one household pet and describe its behavior and sound in one sentence.',
   },
   formal: {
     label: 'Formal register',
@@ -24,19 +43,27 @@ const lines = (value: string) => value.split('\n').map((item) => item.trim()).fi
 export function SteeringWorkbench({ model }: { model: ModelSummary }) {
   const [positive, setPositive] = useState(PRESETS.cats.positive.join('\n'))
   const [negative, setNegative] = useState(PRESETS.cats.negative.join('\n'))
-  const [prompt, setPrompt] = useState('Describe the ideal companion for a quiet apartment.')
+  const recommendedStrength = model.key === 'gemma-3-1b-it' ? 0.3 : 1
+  const [prompt, setPrompt] = useState<string>(PRESETS.cats.prompt)
   const [layer, setLayer] = useState(model.default_layer)
-  const [strength, setStrength] = useState(1)
+  const [strength, setStrength] = useState(recommendedStrength)
   const [maxTokens, setMaxTokens] = useState(96)
-  const [temperature, setTemperature] = useState(0.7)
+  const [temperature, setTemperature] = useState(0)
   const [seed, setSeed] = useState(16)
   const [result, setResult] = useState<ActivationSteeringResponse | null>(null)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const applyPreset = (key: keyof typeof PRESETS) => {
-    setPositive(PRESETS[key].positive.join('\n'))
-    setNegative(PRESETS[key].negative.join('\n'))
+    const preset = PRESETS[key]
+    setPositive(preset.positive.join('\n'))
+    setNegative(preset.negative.join('\n'))
+    if ('prompt' in preset && typeof preset.prompt === 'string') setPrompt(preset.prompt)
+    if (key === 'cats') {
+      setLayer(18)
+      setStrength(recommendedStrength)
+      setTemperature(0)
+    }
   }
 
   const submit = async () => {
@@ -89,13 +116,13 @@ export function SteeringWorkbench({ model }: { model: ModelSummary }) {
 
         <div className="steering-dials">
           <label>Layer <output>L{layer}</output><input type="range" min="0" max={model.key === 'gemma-3-1b-it' ? 25 : 27} value={layer} onChange={(event) => setLayer(Number(event.target.value))} /></label>
-          <label>Strength <output>{strength.toFixed(2)}×</output><input type="range" min="-4" max="4" step="0.25" value={strength} onChange={(event) => setStrength(Number(event.target.value))} /></label>
+          <label>Strength <output>{strength.toFixed(2)}×</output><input type="range" min="-4" max="4" step="0.1" value={strength} onChange={(event) => setStrength(Number(event.target.value))} /></label>
           <label>Tokens<input type="number" min="1" max="128" value={maxTokens} onChange={(event) => setMaxTokens(Number(event.target.value))} /></label>
           <label>Temperature<input type="number" min="0" max="2" step="0.1" value={temperature} onChange={(event) => setTemperature(Number(event.target.value))} /></label>
           <label>Seed<input type="number" min="0" value={seed} onChange={(event) => setSeed(Number(event.target.value))} /></label>
         </div>
 
-        <p className="method-caveat">A changed output demonstrates causal influence at this layer. It does not prove the vector represents one clean concept.</p>
+        <p className="method-caveat">Preset strengths are calibrated per model. Steering shifts probabilities rather than inserting guaranteed keywords; a changed output demonstrates causal influence, not one clean monosemantic concept.</p>
       </aside>
 
       <div className="paired-stage">

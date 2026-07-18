@@ -189,6 +189,24 @@ describe('Open Silico model rack', () => {
     await userEvent.click(screen.getByRole('button', { name: /Open Activation Steering/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Run A / B →' }))
 
+    const steeringCall = fetchMock.mock.calls.find(([request]) =>
+      request.toString().endsWith('/api/steer'),
+    )
+    const steeringRequest = JSON.parse(String(steeringCall?.[1]?.body))
+    expect(steeringRequest).toMatchObject({
+      layer: 18,
+      strength: 1,
+      temperature: 0,
+      positive_examples: expect.arrayContaining([
+        'The animal is a cat',
+        'The feline kneads and purrs',
+      ]),
+      negative_examples: expect.arrayContaining([
+        'The animal is a dog',
+        'The canine fetches and barks',
+      ]),
+    })
+
     expect(await screen.findByText('A dog can be a loyal companion.')).toBeInTheDocument()
     expect(screen.getByText('A cat can be a calm, independent companion.')).toBeInTheDocument()
     expect(screen.getByText('12.500')).toBeInTheDocument()
