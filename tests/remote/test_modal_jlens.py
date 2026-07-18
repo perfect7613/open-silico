@@ -60,3 +60,48 @@ def test_deployed_strength_zero_is_a_matched_control(model_key: str) -> None:
     assert response.direction_norm > 0
     assert response.baseline_message
     assert response.baseline_message == response.steered_message
+
+
+@pytest.mark.skipif(
+    os.getenv("OPEN_SILICO_RUN_MODAL_SMOKE") != "1",
+    reason="set OPEN_SILICO_RUN_MODAL_SMOKE=1 after deploying backend/modal_app.py",
+)
+def test_deployed_gemma_cat_preset_has_visible_topic_effect() -> None:
+    response = ModalActivationSteeringRunner("open-silico-jlens").run(
+        ActivationSteeringRequest(
+            model_key="gemma-3-1b-it",
+            prompt=(
+                "Choose one household pet and describe its behavior and sound in one sentence."
+            ),
+            positive_examples=[
+                "The animal is a cat",
+                "This story is about a kitten",
+                "The creature is a feline",
+                "The pet makes a soft purr",
+                "The sound is a gentle meow",
+                "The cat purrs contentedly",
+                "The kitten meows softly",
+                "The feline kneads and purrs",
+            ],
+            negative_examples=[
+                "The animal is a dog",
+                "This story is about a puppy",
+                "The creature is a canine",
+                "The pet makes a loud bark",
+                "The sound is a loud woof",
+                "The dog barks excitedly",
+                "The puppy barks loudly",
+                "The canine fetches and barks",
+            ],
+            layer=18,
+            strength=0.3,
+            max_new_tokens=48,
+            temperature=0,
+            seed=16,
+        )
+    )
+
+    assert "dog" in response.baseline_message.lower()
+    assert "cat" in response.steered_message.lower()
+    assert "purr" in response.steered_message.lower()
+    assert response.baseline_message != response.steered_message
