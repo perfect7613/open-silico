@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 const catalog = {
-  default_model: 'qwen3.5-4b',
+  default_model: 'qwen3-1.7b',
   models: [
     {
       key: 'gemma-3-1b-it',
@@ -29,11 +29,11 @@ const catalog = {
       parameter_count: '1B',
     },
     {
-      key: 'qwen3.5-4b',
-      display_name: 'Qwen3.5 4B',
+      key: 'qwen3-1.7b',
+      display_name: 'Qwen3 1.7B',
       provider: 'Qwen',
-      model_id: 'Qwen/Qwen3.5-4B',
-      revision: '851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a',
+      model_id: 'Qwen/Qwen3-1.7B',
+      revision: '70d244cc86ccca08cf5af4e1e306ecf908b1ad5e',
       license_name: 'Apache-2.0',
       access: {
         state: 'available',
@@ -44,10 +44,10 @@ const catalog = {
       runtime_state: 'remote_only',
       techniques: [
         { id: 'jacobian_lens', label: 'Jacobian Lens', implementation_state: 'available' },
-        { id: 'activation_steering', label: 'Activation Steering' },
+        { id: 'activation_steering', label: 'Activation Steering', implementation_state: 'available' },
       ],
-      default_layer: 20,
-      parameter_count: '4B',
+      default_layer: 18,
+      parameter_count: '1.7B',
     },
   ],
 }
@@ -76,7 +76,7 @@ describe('Open Silico model rack', () => {
 
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: 'Qwen3.5 4B' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Qwen3 1.7B' })).toBeInTheDocument()
     expect(screen.getByText('NO LOCAL WEIGHTS')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /Gemma 3 1B Instruct/i }))
@@ -100,7 +100,7 @@ describe('Open Silico model rack', () => {
       const url = request.toString()
       if (options?.method === 'POST') {
         return response({
-          model_key: 'qwen3.5-4b',
+          model_key: 'qwen3-1.7b',
           prompt: 'Test',
           tokens: [{ position: 0, token_id: 42, text: 'Test' }],
           rows: [
@@ -115,9 +115,13 @@ describe('Open Silico model rack', () => {
               positions: [{ position: 0, predictions: [{ rank: 1, token_id: 8, text: 'done', score: 5 }] }],
             },
           ],
+          rank_tracks: [
+            { token_id: 7, text: 'task', ranks: [[1], [12]] },
+            { token_id: 8, text: 'done', ranks: [[8], [1]] },
+          ],
           metadata: {
-            model_id: 'Qwen/Qwen3.5-4B',
-            model_revision: '851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a',
+            model_id: 'Qwen/Qwen3-1.7B',
+            model_revision: '70d244cc86ccca08cf5af4e1e306ecf908b1ad5e',
             lens_repo: 'neuronpedia/jacobian-lens',
             lens_revision: '16a01f309fcec900fdcec3f4cd5b64f3d00e4d5a',
             lens_file: 'qwen/lens.pt',
@@ -126,6 +130,7 @@ describe('Open Silico model rack', () => {
             top_k: 5,
             source_layers: [8],
             elapsed_ms: 120,
+            vocab_size: 100,
             cache: 'modal_volume',
           },
         })
@@ -137,12 +142,56 @@ describe('Open Silico model rack', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<App />)
-    await screen.findByRole('heading', { name: 'Qwen3.5 4B' })
+    await screen.findByRole('heading', { name: 'Qwen3 1.7B' })
     await userEvent.click(screen.getByRole('button', { name: 'Open Jacobian Lens →' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Run remote lens' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Run lens' }))
 
-    expect(await screen.findByText('Internal readout')).toBeInTheDocument()
-    expect(screen.getByText('OUTPUT')).toBeInTheDocument()
-    expect(screen.getByText('FINAL L31')).toBeInTheDocument()
+    expect(await screen.findByText('ARGMAX · LAYER × POS')).toBeInTheDocument()
+    expect(screen.getByText('PINNED TOKEN RANK · FULL VOCAB')).toBeInTheDocument()
+    expect(screen.getByText('1 POS × 2 LAYERS')).toBeInTheDocument()
+  })
+
+  it('runs a paired activation-steering experiment', async () => {
+    const fetchMock = vi.fn((request: RequestInfo | URL, options?: RequestInit) => {
+      const url = request.toString()
+      if (url.endsWith('/api/steer') && options?.method === 'POST') {
+        return response({
+          model_key: 'qwen3-1.7b',
+          prompt: 'Describe a companion.',
+          baseline_message: 'A dog can be a loyal companion.',
+          steered_message: 'A cat can be a calm, independent companion.',
+          direction_norm: 12.5,
+          metadata: {
+            model_id: 'Qwen/Qwen3-1.7B',
+            model_revision: '70d244cc86ccca08cf5af4e1e306ecf908b1ad5e',
+            layer: 18,
+            strength: 1,
+            seed: 16,
+            max_new_tokens: 96,
+            temperature: 0.7,
+            top_p: 0.9,
+            positive_count: 3,
+            negative_count: 3,
+            elapsed_ms: 90,
+            cache: 'modal_volume',
+          },
+          warnings: ['A causal intervention is not proof of monosemanticity.'],
+        })
+      }
+      return url.endsWith('/health')
+        ? response({ status: 'ok', version: '0.1.0', environment: 'test' })
+        : response(catalog)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Qwen3 1.7B' })
+    await userEvent.click(screen.getByRole('button', { name: /Open Activation Steering/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Run A / B →' }))
+
+    expect(await screen.findByText('A dog can be a loyal companion.')).toBeInTheDocument()
+    expect(screen.getByText('A cat can be a calm, independent companion.')).toBeInTheDocument()
+    expect(screen.getByText('12.500')).toBeInTheDocument()
+    expect(screen.getByText('REMOVED')).toBeInTheDocument()
   })
 })

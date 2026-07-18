@@ -32,8 +32,8 @@ def test_catalog_falls_back_to_qwen_when_gemma_access_is_missing() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["default_model"] == "qwen3.5-4b"
-    assert [model["key"] for model in payload["models"]] == ["gemma-3-1b-it", "qwen3.5-4b"]
+    assert payload["default_model"] == "qwen3-1.7b"
+    assert [model["key"] for model in payload["models"]] == ["gemma-3-1b-it", "qwen3-1.7b"]
     gemma, qwen = payload["models"]
     assert gemma["access"]["state"] == "requires_access"
     assert gemma["access"]["configured"] is False

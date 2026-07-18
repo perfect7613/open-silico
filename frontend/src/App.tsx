@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import './App.css'
 import { JacobianLensWorkbench } from './JacobianLensWorkbench'
+import { SteeringWorkbench } from './SteeringWorkbench'
 import {
   fetchHealth,
   fetchModelCatalog,
@@ -87,9 +88,11 @@ function LoadingShell() {
 function ModelInstrument({
   model,
   onOpenLens,
+  onOpenSteering,
 }: {
   model: ModelSummary
   onOpenLens: () => void
+  onOpenSteering: () => void
 }) {
   const accessible = model.access.state === 'available'
   return (
@@ -168,7 +171,7 @@ function ModelInstrument({
         <div className="technique-deck">
           {model.techniques.map((technique) => {
             const lens = technique.id === 'jacobian_lens'
-            const available = technique.implementation_state === 'available'
+            const available = technique.implementation_state === 'available' && accessible
             return (
               <article className={`technique-card ${available ? 'is-available' : ''}`} key={technique.id}>
                 <span className="technique-icon"><SignalIcon kind={lens ? 'lens' : 'steer'} /></span>
@@ -179,8 +182,8 @@ function ModelInstrument({
                     ? 'Read token-like representations across residual layers and positions.'
                     : 'Derive a contrast direction, intervene, and compare matched generations.'}
                 </p>
-                <button type="button" disabled={!available} onClick={lens ? onOpenLens : undefined}>
-                  {available ? 'Open Jacobian Lens →' : lens ? 'Lens runtime queued' : 'Steering runtime queued'}
+                <button type="button" disabled={!available} onClick={lens ? onOpenLens : onOpenSteering}>
+                  {available ? `Open ${technique.label} →` : !accessible ? 'Model access required' : `${technique.label} runtime queued`}
                 </button>
               </article>
             )
@@ -197,7 +200,7 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'models' | 'jlens'>('models')
+  const [view, setView] = useState<'models' | 'jlens' | 'steering'>('models')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -224,8 +227,13 @@ function App() {
   )
 
   const openLens = () => {
-    setSelectedKey('qwen3.5-4b')
+    if (selectedModel?.access.state !== 'available') setSelectedKey('qwen3-1.7b')
     setView('jlens')
+  }
+
+  const openSteering = () => {
+    if (selectedModel?.access.state !== 'available') setSelectedKey('qwen3-1.7b')
+    setView('steering')
   }
 
   return (
@@ -241,14 +249,14 @@ function App() {
         <nav className="technique-nav" aria-label="Primary techniques">
           <button className={view === 'models' ? 'is-active' : ''} type="button" onClick={() => setView('models')}>Models</button>
           <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Jacobian Lens <span>02</span></button>
-          <button type="button" disabled>Steering <span>05</span></button>
+          <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Steering <span>05</span></button>
         </nav>
-        <a className="issue-link" href={`https://github.com/perfect7613/open-silico/issues/${view === 'jlens' ? 3 : 2}`} target="_blank" rel="noreferrer">
-          Slice {view === 'jlens' ? '02' : '01'} ↗
+        <a className="issue-link" href={`https://github.com/perfect7613/open-silico/issues/${view === 'jlens' ? 5 : view === 'steering' ? 6 : 2}`} target="_blank" rel="noreferrer">
+          Slice {view === 'jlens' ? '04' : view === 'steering' ? '05' : '01'} ↗
         </a>
       </header>
 
-      <div className="workspace">
+      <div className={`workspace ${view !== 'models' ? 'is-instrument' : ''}`}>
         <aside className="model-rail" aria-labelledby="model-rail-title">
           <div className="rail-heading">
             <span className="rail-index">A—01</span>
@@ -300,10 +308,13 @@ function App() {
             </section>
           )}
           {!loading && !error && selectedModel && view === 'models' && (
-            <ModelInstrument model={selectedModel} onOpenLens={openLens} />
+            <ModelInstrument model={selectedModel} onOpenLens={openLens} onOpenSteering={openSteering} />
           )}
           {!loading && !error && selectedModel && view === 'jlens' && (
             <JacobianLensWorkbench model={selectedModel} />
+          )}
+          {!loading && !error && selectedModel && view === 'steering' && (
+            <SteeringWorkbench model={selectedModel} />
           )}
         </main>
       </div>

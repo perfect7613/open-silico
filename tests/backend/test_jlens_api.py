@@ -38,7 +38,7 @@ def fixture_response(request: JacobianLensRequest) -> JacobianLensResponse:
                 },
             ],
             "metadata": {
-                "model_id": "Qwen/Qwen3.5-4B",
+                "model_id": "Qwen/Qwen3-1.7B",
                 "model_revision": "model-sha",
                 "lens_repo": "neuronpedia/jacobian-lens",
                 "lens_revision": "lens-sha",
@@ -48,6 +48,7 @@ def fixture_response(request: JacobianLensRequest) -> JacobianLensResponse:
                 "top_k": request.top_k,
                 "source_layers": [8],
                 "elapsed_ms": 12,
+                "vocab_size": 100,
             },
         }
     )
@@ -81,7 +82,7 @@ def test_jlens_tracer_bullet_preserves_final_output_row_and_revisions() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["model_key"] == "qwen3.5-4b"
+    assert payload["model_key"] == "qwen3-1.7b"
     assert payload["rows"][-1]["kind"] == "model_output"
     assert payload["metadata"]["model_revision"] == "model-sha"
     assert payload["metadata"]["lens_revision"] == "lens-sha"

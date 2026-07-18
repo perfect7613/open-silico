@@ -60,8 +60,8 @@ class ModalJacobianLensRunner:
 
     def run(self, request: JacobianLensRequest) -> JacobianLensResponse:
         try:
-            worker_cls = modal.Cls.from_name(self.app_name, "QwenJacobianLens")
-            payload = worker_cls().run.remote(request.model_dump())
+            worker_cls = modal.Cls.from_name(self.app_name, "OpenSilicoModel")
+            payload = worker_cls(model_key=request.model_key).run.remote(request.model_dump())
             return JacobianLensResponse.model_validate(payload)
         except JacobianLensExecutionError:
             raise

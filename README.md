@@ -14,7 +14,13 @@ See [PLAN.md](PLAN.md) for the time-boxed implementation plan and [docs/PRD.md](
 
 ## Status
 
-Slices 1 and 2 are implemented: the workbench switches between Gemma and Qwen, and the Qwen3.5 4B path runs a real, pre-fitted Jacobian Lens on Modal without downloading weights locally. Activation steering and model-parity work are tracked in [GitHub issues](https://github.com/perfect7613/open-silico/issues).
+The current vertical slice runs both techniques on pinned Gemma 3 1B Instruct and Qwen3 1.7B checkpoints:
+
+- The linked J-Lens console shows the argmax layer × position matrix, layer and position token readouts, exact full-vocabulary rank heatmap, and synchronized rank trajectories.
+- The steering bench derives a real positive-minus-negative residual direction, runs matched baseline and steered generations, and removes its intervention hook after every request.
+- Both model/lens pairs and strength-zero steering controls have passed opt-in tests against the deployed Modal GPU runtime.
+
+Multi-turn histories, saved experiments, preset expansion, and user-supplied model adapters remain tracked in [GitHub issues](https://github.com/perfect7613/open-silico/issues).
 
 ## Local development
 
@@ -39,10 +45,12 @@ Open `http://localhost:5173`. The API is available at `http://localhost:8000`, w
 
 ## Modal deployment
 
-The Jacobian Lens worker uses an L40S GPU and a persistent `open-silico-artifacts` volume. The image pins the Qwen model, pre-fitted lens, and Anthropic implementation by commit. Deploy it with:
+The shared J-Lens and steering worker uses an L40S GPU and a persistent `open-silico-artifacts` volume. The image pins both models, their pre-fitted lenses, and the Anthropic implementation by commit.
+
+Gemma is gated. Accept its terms on Hugging Face, then create a Modal Secret containing `HF_TOKEN` (the default secret name is `huggingface-secret`). Deploy with:
 
 ```bash
-PYTHONPATH=backend uv run modal deploy backend/modal_app.py
+OPEN_SILICO_HF_SECRET_NAME=huggingface-secret uv run modal deploy backend/modal_app.py
 ```
 
 For same-origin local development, proxy API requests to the returned HTTPS endpoint in `frontend/.env`:
@@ -52,7 +60,7 @@ VITE_API_BASE_URL=
 VITE_API_PROXY_TARGET=https://your-workspace--open-silico-jlens-api.modal.run
 ```
 
-To run the real GPU smoke test after deployment:
+To run the real Qwen J-Lens and strength-zero steering smoke tests after deployment:
 
 ```bash
 OPEN_SILICO_RUN_MODAL_SMOKE=1 uv run pytest tests/remote/test_modal_jlens.py

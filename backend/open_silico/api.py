@@ -15,12 +15,15 @@ from open_silico.jlens_service import (
 )
 from open_silico.model_registry import build_catalog
 from open_silico.schemas import HealthResponse, ModelCatalog
+from open_silico.steering_contracts import ActivationSteeringRequest, ActivationSteeringResponse
+from open_silico.steering_service import ActivationSteeringRunner, ModalActivationSteeringRunner
 
 
 def create_app(
     settings: Settings | None = None,
     *,
     jlens_runner: JacobianLensRunner | None = None,
+    steering_runner: ActivationSteeringRunner | None = None,
 ) -> FastAPI:
     active_settings = settings or get_settings()
     app = FastAPI(
@@ -52,6 +55,30 @@ def create_app(
     )
     def run_jacobian_lens(request: JacobianLensRequest) -> JacobianLensResponse:
         runner = jlens_runner or ModalJacobianLensRunner(active_settings.modal_jlens_app_name)
+        try:
+            return runner.run(request)
+        except JacobianLensExecutionError as error:
+            raise HTTPException(
+                status_code=error.status_code,
+                detail=PublicError(
+                    code=error.code,
+                    message=str(error),
+                    retryable=error.retryable,
+                ).model_dump(),
+            ) from error
+
+    @app.post(
+        "/api/steer",
+        response_model=ActivationSteeringResponse,
+        responses={503: {"model": PublicError}, 504: {"model": PublicError}},
+        tags=["activation-steering"],
+    )
+    def run_activation_steering(
+        request: ActivationSteeringRequest,
+    ) -> ActivationSteeringResponse:
+        runner = steering_runner or ModalActivationSteeringRunner(
+            active_settings.modal_jlens_app_name
+        )
         try:
             return runner.run(request)
         except JacobianLensExecutionError as error:
