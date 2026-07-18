@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap');
+
+:root {
+  --paper: #f6f5ee;
+  --paper-deep: #eceae0;
+  --white: #fffefa;
+  --ink: #0c2631;
+  --muted: #66767b;
+  --line: #d5d7d1;
+  --line-strong: #96a3a5;
+  --cyan: #00c9db;
+  --cyan-dark: #007f96;
+  --cyan-wash: #e3f8f8;
+  --acid: #d9f45b;
+  --orange: #ff6c3a;
+  --orange-wash: #fff0e9;
+  --focus: rgba(0, 201, 219, 0.42);
+  --display: 'Instrument Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--display);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--paper); }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, textarea, select { font: inherit; }
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+::selection { color: var(--ink); background: var(--acid); }
