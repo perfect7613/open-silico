@@ -9,6 +9,19 @@ TECHNIQUES = (
 )
 
 
+def _techniques_for(spec: "ModelSpec") -> tuple[TechniqueSummary, ...]:
+    if spec.key == "qwen3.5-4b":
+        return (
+            TechniqueSummary(
+                id="jacobian_lens",
+                label="Jacobian Lens",
+                implementation_state="available",
+            ),
+            TECHNIQUES[1],
+        )
+    return TECHNIQUES
+
+
 @dataclass(frozen=True, slots=True)
 class ModelSpec:
     key: str
@@ -35,15 +48,15 @@ MODEL_SPECS = (
         parameter_count="1B",
     ),
     ModelSpec(
-        key="qwen3-1.7b",
-        display_name="Qwen3 1.7B",
+        key="qwen3.5-4b",
+        display_name="Qwen3.5 4B",
         provider="Qwen",
-        model_id="Qwen/Qwen3-1.7B",
-        revision="70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+        model_id="Qwen/Qwen3.5-4B",
+        revision="851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
         license_name="Apache-2.0",
         gated=False,
-        default_layer=18,
-        parameter_count="1.7B",
+        default_layer=20,
+        parameter_count="4B",
     ),
 )
 
@@ -78,7 +91,7 @@ def build_catalog(settings: Settings) -> ModelCatalog:
             revision=spec.revision,
             license_name=spec.license_name,
             access=_access_for(spec, settings),
-            techniques=TECHNIQUES,
+            techniques=_techniques_for(spec),
             default_layer=spec.default_layer,
             parameter_count=spec.parameter_count,
         )
@@ -86,6 +99,6 @@ def build_catalog(settings: Settings) -> ModelCatalog:
     )
     default_model = next(
         (model.key for model in models if model.key == "gemma-3-1b-it" and model.access.configured),
-        "qwen3-1.7b",
+        "qwen3.5-4b",
     )
     return ModelCatalog(models=models, default_model=default_model)

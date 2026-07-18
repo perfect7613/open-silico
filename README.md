@@ -14,7 +14,7 @@ See [PLAN.md](PLAN.md) for the time-boxed implementation plan and [docs/PRD.md](
 
 ## Status
 
-Slice 1 is implemented: the API exposes a capability-aware, revision-pinned model catalog and the web workbench switches between Qwen3 1.7B and Gemma 3 1B Instruct without downloading weights locally. GPU techniques are tracked in [GitHub issues](https://github.com/perfect7613/open-silico/issues).
+Slices 1 and 2 are implemented: the workbench switches between Gemma and Qwen, and the Qwen3.5 4B path runs a real, pre-fitted Jacobian Lens on Modal without downloading weights locally. Activation steering and model-parity work are tracked in [GitHub issues](https://github.com/perfect7613/open-silico/issues).
 
 ## Local development
 
@@ -36,6 +36,27 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. The API is available at `http://localhost:8000`, with interactive OpenAPI documentation at `/docs`.
+
+## Modal deployment
+
+The Jacobian Lens worker uses an L40S GPU and a persistent `open-silico-artifacts` volume. The image pins the Qwen model, pre-fitted lens, and Anthropic implementation by commit. Deploy it with:
+
+```bash
+PYTHONPATH=backend uv run modal deploy backend/modal_app.py
+```
+
+For same-origin local development, proxy API requests to the returned HTTPS endpoint in `frontend/.env`:
+
+```bash
+VITE_API_BASE_URL=
+VITE_API_PROXY_TARGET=https://your-workspace--open-silico-jlens-api.modal.run
+```
+
+To run the real GPU smoke test after deployment:
+
+```bash
+OPEN_SILICO_RUN_MODAL_SMOKE=1 uv run pytest tests/remote/test_modal_jlens.py
+```
 
 Run the checks with:
 
