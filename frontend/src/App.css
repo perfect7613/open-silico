@@ -1535,17 +1535,17 @@
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
-    radial-gradient(circle at 68% 30%, rgba(41, 197, 202, .07), transparent 35%);
+    linear-gradient(90deg, rgba(16, 65, 72, .07) 1px, transparent 1px),
+    linear-gradient(rgba(16, 65, 72, .055) 1px, transparent 1px),
+    radial-gradient(circle at 68% 30%, rgba(255, 255, 255, .32), transparent 38%);
   background-size: 28px 28px, 28px 28px, auto;
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
 }
 
 .volume-axis {
   position: absolute;
   z-index: 2;
-  color: #607b84;
+  color: #254f57;
   font: 650 7px/1 var(--mono);
   letter-spacing: .09em;
   pointer-events: none;
@@ -1553,10 +1553,10 @@
 
 .volume-axis-x { right: 14px; bottom: 12px; }
 .volume-axis-y { left: 12px; top: 50%; transform: rotate(-90deg) translateX(-50%); transform-origin: left top; }
-.volume-legend { position: absolute; z-index: 2; left: 16px; bottom: 12px; display: flex; align-items: center; gap: 5px; color: #668089; font: 600 7px/1 var(--mono); text-transform: uppercase; }
+.volume-legend { position: absolute; z-index: 2; left: 16px; bottom: 12px; display: flex; align-items: center; gap: 5px; color: #254f57; font: 600 7px/1 var(--mono); text-transform: uppercase; }
 .volume-legend i,
 .volume-legend span { width: 19px; height: 5px; display: block; background: #27c4ca; }
-.volume-legend span { margin-left: 6px; background: #15303a; }
+.volume-legend span { margin-left: 6px; background: #527982; }
 
 .volume-layer-index { position: absolute; z-index: 4; top: 14px; right: 14px; width: 116px; border: 1px solid #38515a; background: rgba(8, 20, 25, .9); box-shadow: 8px 8px 0 rgba(0,0,0,.2); backdrop-filter: blur(10px); }
 .volume-layer-index > header { min-height: 30px; padding: 0 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #30454d; color: #667f87; font: 650 6px/1 var(--mono); letter-spacing: .08em; }

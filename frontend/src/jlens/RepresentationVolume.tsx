@@ -106,22 +106,23 @@ function LayerStack({
             >
               <boxGeometry args={[width, 0.43, 0.055]} />
               <meshBasicMaterial
-                color={row.kind === 'model_output' ? '#cfff4b' : active ? '#55dce2' : '#34525c'}
+                color={row.kind === 'model_output' ? '#789216' : active ? '#7ec5c6' : '#3e8189'}
                 transparent
-                opacity={active ? 0.22 : row.kind === 'model_output' ? 0.15 : 0.075}
+                opacity={active ? 0.24 : 0.7}
                 depthWrite={false}
+                wireframe={!active}
               />
             </mesh>
             <mesh position={[spineX, y, 0.02]} raycast={() => null}>
               <sphereGeometry args={[active ? 0.075 : 0.048, 12, 12]} />
-              <meshBasicMaterial color={active ? '#cfff4b' : '#55dce2'} toneMapped={false} />
+              <meshBasicMaterial color={active ? '#8aaa12' : '#087682'} toneMapped={false} />
             </mesh>
           </group>
         )
       })}
       <mesh position={[spineX, 0, 0.02]} raycast={() => null}>
         <boxGeometry args={[0.018, Math.max(1, (layerCount - 1) * 0.62), 0.018]} />
-        <meshBasicMaterial color="#55dce2" transparent opacity={0.58} toneMapped={false} />
+        <meshBasicMaterial color="#087682" transparent opacity={0.88} toneMapped={false} />
       </mesh>
     </group>
   )
@@ -133,7 +134,6 @@ function VolumeCells({
   positionCount,
   selection,
   signalColor,
-  activeRowIndex,
   onHover,
   onSelect,
 }: {
@@ -142,7 +142,6 @@ function VolumeCells({
   positionCount: number
   selection: JLensSelection
   signalColor: string
-  activeRowIndex: number
   onHover: (cell: RepresentationCell | null) => void
   onSelect: (selection: JLensSelection) => void
 }) {
@@ -167,17 +166,12 @@ function VolumeCells({
       transform.scale.set(0.39, 0.34, height)
       transform.updateMatrix()
       mesh.setMatrixAt(index, transform.matrix)
-      mesh.setColorAt(
-        index,
-        new THREE.Color(cell.rowIndex === activeRowIndex ? '#55dce2' : '#1a5d67'),
-      )
     })
 
     mesh.instanceMatrix.needsUpdate = true
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
     mesh.computeBoundingSphere()
     invalidate()
-  }, [activeRowIndex, cells, invalidate, layerCount, positionCount, transform])
+  }, [cells, invalidate, layerCount, positionCount, transform])
 
   const cellFromEvent = (event: ThreeEvent<PointerEvent | MouseEvent>) =>
     event.instanceId == null ? null : cells[event.instanceId] ?? null
@@ -201,7 +195,7 @@ function VolumeCells({
         }}
       >
         <boxGeometry />
-        <meshBasicMaterial vertexColors transparent opacity={0.86} toneMapped={false} />
+        <meshBasicMaterial color="#18aab5" toneMapped={false} />
       </instancedMesh>
       {selectedCell && (
         <mesh
@@ -224,7 +218,7 @@ function VolumeCells({
 export function RepresentationVolume({
   result,
   selectedTokenId,
-  selectedTokenColor = '#27c4ca',
+  selectedTokenColor = '#d62f83',
   selection,
   onSelect,
   compact = false,
@@ -286,7 +280,13 @@ export function RepresentationVolume({
             onPointerMissed={() => setHovered(null)}
             aria-label="Interactive three-dimensional Jacobian Lens rank volume"
           >
-            <color attach="background" args={['#071116']} />
+            <color attach="background" args={['#c9d9d6']} />
+            <gridHelper
+              args={[extent * 2, 24, '#668b90', '#abc1bf']}
+              rotation={[Math.PI / 2, 0, 0]}
+              position={[0, 0, -0.14]}
+              raycast={() => null}
+            />
             <LayerStack
               rows={result.rows}
               positionCount={volume.positionCount}
@@ -301,7 +301,6 @@ export function RepresentationVolume({
               positionCount={volume.positionCount}
               selection={selection}
               signalColor={selectedTokenColor}
-              activeRowIndex={activeRowIndex}
               onHover={setHovered}
               onSelect={onSelect}
             />
