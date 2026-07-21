@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -65,6 +65,7 @@ function response(body: unknown, ok = true): Promise<Response> {
 }
 
 afterEach(() => {
+  cleanup()
   vi.unstubAllGlobals()
 })
 
@@ -226,7 +227,7 @@ describe('Mechanoscope model rack', () => {
     expect(screen.getByText('REMOVED')).toBeInTheDocument()
   })
 
-  it('shows the verified causal-trace golden path without waking a GPU', async () => {
+  it('explains claim compatibility without inventing a causal link', async () => {
     vi.stubGlobal('fetch', vi.fn((request: RequestInfo | URL) =>
       request.toString().endsWith('/health')
         ? response({ status: 'ok', version: '0.1.0', environment: 'test' })
@@ -235,12 +236,11 @@ describe('Mechanoscope model rack', () => {
 
     const rendered = render(<App />)
     await within(rendered.container).findByRole('heading', { name: 'Qwen3 1.7B' })
-    await userEvent.click(within(rendered.container).getByRole('button', { name: /Causal Trace/ }))
-    await userEvent.click(within(rendered.container).getByRole('button', { name: 'View verified Qwen example →' }))
+    const navigation = within(rendered.container).getByRole('navigation', { name: 'Primary techniques' })
+    await userEvent.click(within(navigation).getByRole('button', { name: /Check a claim/ }))
 
-    expect(within(rendered.container).getByText('CAUSAL INFLUENCE OBSERVED')).toBeInTheDocument()
-    expect(within(rendered.container).getByText(/Verified remote example/)).toBeInTheDocument()
-    expect(within(rendered.container).getByRole('button', { name: 'Share X-Ray card' })).toBeEnabled()
-    expect(within(rendered.container).getByText('Mechanism established')).toBeInTheDocument()
+    expect(within(rendered.container).getByRole('heading', { name: 'CAN THESE RUNS CONNECT?' })).toBeInTheDocument()
+    expect(within(rendered.container).getByText('DON’T JOIN DOTS THAT AREN’T CONNECTED.')).toBeInTheDocument()
+    expect(within(rendered.container).getByText(/only become one causal experiment if the intervention is actually derived/)).toBeInTheDocument()
   })
 })

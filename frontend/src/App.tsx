@@ -3,7 +3,7 @@ import './App.css'
 import { JacobianLensWorkbench } from './JacobianLensWorkbench'
 import { SteeringWorkbench } from './SteeringWorkbench'
 import { ExperimentHistory } from './experiments/ExperimentHistory'
-import { CausalTraceWorkbench } from './experiments/CausalTraceWorkbench'
+import { ClaimCheckWorkbench } from './experiments/ClaimCheckWorkbench'
 import {
   fetchHealth,
   fetchModelCatalog,
@@ -87,6 +87,36 @@ function LoadingShell() {
   )
 }
 
+function GettingStarted({
+  onLookInside,
+  onSteer,
+  onCheck,
+}: {
+  onLookInside: () => void
+  onSteer: () => void
+  onCheck: () => void
+}) {
+  return (
+    <section className="getting-started" aria-labelledby="getting-started-title">
+      <header>
+        <p className="eyebrow">New here? Start with one question</p>
+        <h3 id="getting-started-title">What do you want to learn about the model?</h3>
+      </header>
+      <div className="journey-cards">
+        <button type="button" onClick={onLookInside}>
+          <i>1</i><span><strong>What is it representing?</strong><small>Look across layers and see which token-like ideas become prominent.</small></span><b>Look inside →</b>
+        </button>
+        <button type="button" onClick={onSteer}>
+          <i>2</i><span><strong>Does an internal direction matter?</strong><small>Run the same prompt with and without one controlled intervention.</small></span><b>Test influence →</b>
+        </button>
+        <button type="button" onClick={onCheck}>
+          <i>3</i><span><strong>Am I claiming too much?</strong><small>Check whether two saved runs are actually comparable.</small></span><b>Check a claim →</b>
+        </button>
+      </div>
+    </section>
+  )
+}
+
 function ModelInstrument({
   model,
   onOpenLens,
@@ -101,74 +131,53 @@ function ModelInstrument({
     <>
       <section className="model-heading" aria-labelledby="selected-model-title">
         <div>
-          <p className="eyebrow">Selected remote subject</p>
+          <p className="eyebrow">Your selected model</p>
           <h2 id="selected-model-title">{model.display_name}</h2>
           <p className="model-subtitle">
-            {model.provider} · {model.parameter_count} parameters · default residual layer{' '}
-            {model.default_layer}
+            Ready for remote experiments. Nothing is downloaded to your computer.
           </p>
         </div>
         <AvailabilityBadge model={model} />
       </section>
 
-      <div className="instrument-grid">
-        <section className="checkpoint-panel" aria-label="Checkpoint identity">
-          <div className="panel-label">
-            <span>01</span>
-            Checkpoint identity
-          </div>
-          <dl className="identity-grid">
-            <div>
-              <dt>Repository</dt>
-              <dd>{model.model_id}</dd>
+      <details className="technical-details">
+        <summary>Model details and reproducibility</summary>
+        <div className="instrument-grid">
+          <section className="checkpoint-panel" aria-label="Checkpoint identity">
+            <div className="panel-label"><span>01</span>Checkpoint identity</div>
+            <dl className="identity-grid">
+              <div><dt>Repository</dt><dd>{model.model_id}</dd></div>
+              <div><dt>Revision</dt><dd title={model.revision}>{shortRevision(model.revision)}</dd></div>
+              <div><dt>License</dt><dd>{model.license_name}</dd></div>
+              <div><dt>Runtime</dt><dd>{model.runtime_state} / remote</dd></div>
+            </dl>
+            <div className={`access-note ${accessible ? 'access-ok' : 'access-warning'}`}>
+              <span className="access-marker">{accessible ? '✓' : '!'}</span>
+              <div><strong>{accessible ? 'Model route configured' : 'One external step remains'}</strong><p>{model.access.message}</p></div>
             </div>
-            <div>
-              <dt>Revision</dt>
-              <dd title={model.revision}>{shortRevision(model.revision)}</dd>
+          </section>
+          <aside className="signal-panel" aria-label="Runtime signal">
+            <div className="panel-label"><span>02</span>Runtime signal</div>
+            <div className="signal-plot" aria-hidden="true">
+              {Array.from({ length: 18 }).map((_, index) => (
+                <i key={index} style={{ '--bar': `${28 + ((index * 17) % 66)}%` } as CSSProperties} />
+              ))}
+              <b>L{model.default_layer}</b>
             </div>
-            <div>
-              <dt>License</dt>
-              <dd>{model.license_name}</dd>
-            </div>
-            <div>
-              <dt>Runtime</dt>
-              <dd>{model.runtime_state} / remote</dd>
-            </div>
-          </dl>
-
-          <div className={`access-note ${accessible ? 'access-ok' : 'access-warning'}`}>
-            <span className="access-marker">{accessible ? '✓' : '!'}</span>
-            <div>
-              <strong>{accessible ? 'Artifact route configured' : 'One external step remains'}</strong>
-              <p>{model.access.message}</p>
-            </div>
-          </div>
-        </section>
-
-        <aside className="signal-panel" aria-label="Runtime signal">
-          <div className="panel-label">
-            <span>02</span>
-            Runtime signal
-          </div>
-          <div className="signal-plot" aria-hidden="true">
-            {Array.from({ length: 18 }).map((_, index) => (
-              <i key={index} style={{ '--bar': `${28 + ((index * 17) % 66)}%` } as CSSProperties} />
-            ))}
-            <b>L{model.default_layer}</b>
-          </div>
-          <ul className="runtime-list">
-            <li><span>Registry</span><strong>verified</strong></li>
-            <li><span>Weights</span><strong>remote only</strong></li>
-            <li><span>GPU worker</span><strong>sleeping</strong></li>
-          </ul>
-        </aside>
-      </div>
+            <ul className="runtime-list">
+              <li><span>Registry</span><strong>verified</strong></li>
+              <li><span>Weights</span><strong>remote only</strong></li>
+              <li><span>GPU worker</span><strong>sleeping</strong></li>
+            </ul>
+          </aside>
+        </div>
+      </details>
 
       <section className="technique-section" aria-labelledby="technique-title">
         <div className="section-intro">
-          <p className="eyebrow">Declared capabilities</p>
-          <h3 id="technique-title">Choose an instrument</h3>
-          <p>Technique runtimes land in the next tracer bullets. Their contracts already belong to this model.</p>
+          <p className="eyebrow">Choose one experiment</p>
+          <h3 id="technique-title">What do you want to test?</h3>
+          <p>Start in plain language. Technical controls and provenance remain available inside each instrument.</p>
         </div>
         <div className="technique-deck">
           {model.techniques.map((technique) => {
@@ -177,15 +186,15 @@ function ModelInstrument({
             return (
               <article className={`technique-card ${available ? 'is-available' : ''}`} key={technique.id}>
                 <span className="technique-icon"><SignalIcon kind={lens ? 'lens' : 'steer'} /></span>
-                <span className="slice-number">{lens ? 'SLICE 02' : 'SLICE 05'}</span>
-                <h4>{technique.label}</h4>
+                <span className="slice-number">{technique.label}</span>
+                <h4>{lens ? 'Look inside the model' : 'Test an internal influence'}</h4>
                 <p>
-                  {technique.description || (lens
-                    ? 'Read token-like representations across residual layers and positions.'
-                    : 'Derive a contrast direction, intervene, and compare matched generations.')}
+                  {lens
+                    ? 'See which token-like ideas the model’s internal state points toward at each layer and position.'
+                    : 'Compare an unchanged answer with one produced after adding a controlled internal direction.'}
                 </p>
-                <button type="button" disabled={!available} onClick={lens ? onOpenLens : onOpenSteering}>
-                  {available ? `Open ${technique.label} →` : !accessible ? 'Model access required' : `${technique.label} runtime queued`}
+                <button aria-label={`Open ${technique.label} →`} type="button" disabled={!available} onClick={lens ? onOpenLens : onOpenSteering}>
+                  {available ? (lens ? 'Open the layer viewer →' : 'Open the steering test →') : !accessible ? 'Model access required' : 'Runtime queued'}
                 </button>
               </article>
             )
@@ -202,7 +211,7 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'causal' | 'history'>('models')
+  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'claim' | 'history'>('models')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -249,11 +258,11 @@ function App() {
           </span>
         </a>
         <nav className="technique-nav" aria-label="Primary techniques">
-          <button className={view === 'models' ? 'is-active' : ''} type="button" onClick={() => setView('models')}>Models</button>
-          <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Jacobian Lens <span>02</span></button>
-          <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Steering <span>05</span></button>
-          <button className={view === 'causal' ? 'is-active' : ''} type="button" onClick={() => setView('causal')}>Causal Trace <span>NEW</span></button>
-          <button className={view === 'history' ? 'is-active' : ''} type="button" onClick={() => setView('history')}>Experiments <span>25</span></button>
+          <button className={view === 'models' ? 'is-active' : ''} type="button" onClick={() => setView('models')}>Start</button>
+          <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Look inside <span>J-Lens</span></button>
+          <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Test influence <span>Steer</span></button>
+          <button className={view === 'claim' ? 'is-active' : ''} type="button" onClick={() => setView('claim')}>Check a claim <span>Guard</span></button>
+          <button className={view === 'history' ? 'is-active' : ''} type="button" onClick={() => setView('history')}>Saved runs <span>Local</span></button>
         </nav>
         <a className="issue-link" href="https://github.com/perfect7613/open-silico" target="_blank" rel="noreferrer">
           Open source ↗
@@ -265,11 +274,11 @@ function App() {
           <div className="rail-heading">
             <span className="rail-index">A—01</span>
             <div>
-              <p className="eyebrow">Remote subjects</p>
-              <h1 id="model-rail-title">Model rack</h1>
+              <p className="eyebrow">Step one</p>
+              <h1 id="model-rail-title">Choose a model</h1>
             </div>
           </div>
-          <p className="rail-copy">Pinned checkpoints. Capabilities are explicit; weights remain off this machine.</p>
+          <p className="rail-copy">This is the AI you want to inspect. Choose an available model to begin.</p>
           <div className="model-list">
             {catalog?.models.map((model) => (
               <ModelCard
@@ -285,7 +294,7 @@ function App() {
           </div>
           <div className="rail-footnote">
             <span className="pulse" />
-            <p><strong>Catalog only.</strong> GPU containers wake when an experiment is submitted.</p>
+            <p><strong>No local download.</strong> The remote GPU wakes only when you run an experiment.</p>
           </div>
         </aside>
 
@@ -293,13 +302,17 @@ function App() {
           {view === 'models' && (
             <section className="observatory-intro">
               <div>
-                <p className="eyebrow">Open interpretability laboratory</p>
-                <h2>Inspect the machinery,<br /><em>then change one thing.</em></h2>
+                <p className="eyebrow">A microscope for language models</p>
+                <h2>See an internal signal.<br /><em>Test it carefully.</em></h2>
               </div>
               <p className="intro-copy">
-                A controlled surface for seeing what open models represent and testing whether those representations matter.
+                You do not need to be an interpretability expert. Start with a question; Mechanoscope keeps the technical evidence and limitations attached.
               </p>
             </section>
+          )}
+
+          {!loading && !error && view === 'models' && (
+            <GettingStarted onLookInside={openLens} onSteer={openSteering} onCheck={() => setView('claim')} />
           )}
 
           {loading && <LoadingShell />}
@@ -320,8 +333,8 @@ function App() {
           {!loading && !error && selectedModel && view === 'steering' && (
             <SteeringWorkbench model={selectedModel} />
           )}
-          {!loading && !error && view === 'causal' && (
-            <CausalTraceWorkbench onRunLens={openLens} onRunSteering={openSteering} />
+          {!loading && !error && view === 'claim' && (
+            <ClaimCheckWorkbench onRunLens={openLens} onRunSteering={openSteering} />
           )}
           {!loading && !error && view === 'history' && <ExperimentHistory />}
         </main>
