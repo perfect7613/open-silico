@@ -19,10 +19,11 @@ It combines a browser-based research interface, a typed FastAPI gateway, pluggab
 
 Interpretability platforms usually make one of two things excellent: a large atlas of internal features or an environment for expert model-development teams. Mechanoscope is building the missing open workflow between the instruments: a falsifiable, reproducible causal debugging loop.
 
-| Platform | Publicly documented strength | Mechanoscope's distinct focus |
+| Existing approach | What users already get | Mechanoscope's distinct focus |
 | --- | --- | --- |
-| [Neuronpedia](https://www.neuronpedia.org/) | The open interpretability library: large hosted datasets, feature search, SAEs, steering, circuits, Jacobian Lens, NLA, APIs, and community releases | Join observations and interventions into one replayable evidence chain instead of treating each technique result as the endpoint |
-| [Goodfire Silico](https://www.goodfire.ai/silico) | A private, early-access model-design environment with agent-planned experiments, diagnostics, intervention, and frontier-scale infrastructure | Make the experiment protocol open, inspectable, self-hostable, and explicit about the boundary between influence and mechanism |
+| Public interpretability atlases | Large hosted datasets, feature search, steering, circuits, model readouts, APIs, and community releases | Join observations and interventions into one replayable evidence chain instead of treating each technique result as the endpoint |
+| Closed model-design environments | Agent-planned experiments, diagnostics, intervention, team workflows, and managed infrastructure | Make the experiment protocol open, inspectable, self-hostable, and explicit about the boundary between influence and mechanism |
+| Research repositories and notebooks | Fast access to new techniques and reference implementations | Turn techniques into typed adapters inside a consistent debugging and evidence workflow |
 | **Mechanoscope** | An open model observatory with remote execution and typed technique adapters | Hypothesis → observation → matched intervention → limitation-aware causal receipt → replay/share |
 
 ### The first moat: Causal Trace
@@ -88,7 +89,7 @@ flowchart LR
 | `gemma-3-1b-it` | `google/gemma-3-1b-it` | Gated; requires accepting the Gemma license and supplying a Hugging Face token |
 | `qwen3-1.7b` | `Qwen/Qwen3-1.7B` | Public, Apache-2.0 |
 
-Every checkpoint, fitted Neuronpedia lens, and Anthropic Jacobian Lens dependency is pinned to an immutable revision in the source. See `backend/modal_app.py` and `backend/open_silico/model_specs.py` for the exact artifact identities.
+Every checkpoint, fitted lens, and Jacobian Lens dependency is pinned to an immutable revision in the source. See `backend/modal_app.py` and `backend/open_silico/model_specs.py` for the exact artifact identities.
 
 ## Local development
 

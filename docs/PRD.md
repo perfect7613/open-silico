@@ -8,9 +8,9 @@ The immediate problem is to deliver a credible open-source vertical slice rather
 
 Build Mechanoscope, an Apache-2.0 interpretability workbench backed by Modal GPUs. The MVP will expose a capability-aware model switcher with Gemma 3 1B Instruct and Qwen3 1.7B. Gemma is the preferred selection when its gated Hugging Face checkpoint is available; Qwen is the public, ungated fallback. The backend will report model availability and technique compatibility rather than allowing unsupported experiments to fail after submission.
 
-The activation-steering workbench will use a Neuronpedia-inspired layout: a model and vector control rail, synchronized Default and Steered conversation panes, and one shared composer that runs both branches with matched generation parameters and seed. Steering directions will be computed from positive and negative activation examples and applied through temporary residual-stream hooks.
+The activation-steering workbench will use a model and vector control rail, synchronized Default and Steered conversation panes, and one shared composer that runs both branches with matched generation parameters and seed. Steering directions will be computed from positive and negative activation examples and applied through temporary residual-stream hooks.
 
-The Jacobian Lens workbench will use Anthropic's pinned Apache-2.0 reference implementation and compatible pre-fitted Neuronpedia lenses. It will expose the linked Figure 5 experience: prompt transcript, layer-by-position argmax table, token pinning, rank heatmap, by-layer readout, by-position readout, and linked rank trajectories. Model and lens artifacts will be cached in Modal Volumes and never downloaded to the local workstation.
+The Jacobian Lens workbench will use a pinned Apache-2.0 reference implementation and compatible pre-fitted lenses. It will expose a linked research-instrument experience: prompt transcript, layer-by-position argmax table, token pinning, rank heatmap, by-layer readout, by-position readout, and linked rank trajectories. Model and lens artifacts will be cached in Modal Volumes and never downloaded to the local workstation.
 
 The product-level differentiator is a technique-agnostic causal debugging protocol. Its first surface, Causal Trace, pairs a successful Jacobian Lens observation and activation-steering intervention from the same model into one limitation-aware, replayable evidence receipt. This is the beginning of an open experiment graph rather than a third isolated technique demo.
 
@@ -87,7 +87,7 @@ Each experiment will report the exact model, model revision, lens revision, tech
 ## Implementation Decisions
 
 - The MVP model switcher will contain Gemma 3 1B Instruct and Qwen3 1.7B.
-- Gemma is preferred when available because it is small, instruction-tuned, and has a compatible pre-fitted Neuronpedia Jacobian Lens. It is marked as gated and requires the user to accept Google's Hugging Face license and configure a server-side Hugging Face token.
+- Gemma is preferred when available because it is small, instruction-tuned, and has a compatible pre-fitted Jacobian Lens. It is marked as gated and requires the user to accept the model's Hugging Face license and configure a server-side Hugging Face token.
 - Qwen is the ungated Apache-2.0 fallback and must support the same two MVP techniques.
 - Model availability comes from a backend models endpoint. The UI never assumes a configured model is actually accessible.
 - A deep Model Registry module owns immutable model identity, pinned revision, tokenizer identity, access requirements, dtype, GPU class, residual-block adapter, lens identity, default layer, and supported capabilities.
@@ -107,7 +107,7 @@ Each experiment will report the exact model, model revision, lens revision, tech
 - The first interface reuses Anthropic's interactive slice renderer inside a sandboxed iframe, with attribution and a narrow presentation patch for normalized layer labels, pin limits, and top-k probabilities.
 - The J-Lens renderer includes an actual final-output row and clearly distinguishes it from Jacobian-transported intermediate activations.
 - The frontend contains technique-specific workbenches under a shared shell and model switcher. It does not expose controls that the selected model or technique cannot fulfill.
-- The steering desktop layout follows the supplied Neuronpedia reference: fixed control rail, equal Default and Steered panes, and one shared bottom composer.
+- The steering desktop layout follows the supplied visual reference: fixed control rail, equal Default and Steered panes, and one shared bottom composer.
 - Recent experiment inputs and results are stored only in browser local storage during the MVP. There is no account or server-side experiment database.
 - Copy/share produces a self-contained configuration payload. Public server-hosted share links are deferred until persistent storage exists.
 - The GPU worker accepts one input at a time because temporary model hooks and generation state must never overlap.
@@ -144,12 +144,12 @@ Each experiment will report the exact model, model revision, lens revision, tech
 - User accounts, organizations, billing, quotas, and permanent server-side experiment storage.
 - Public share URLs backed by a database.
 - True token streaming if it jeopardizes completing the two techniques; paired completed responses are acceptable for the first vertical slice.
-- Exact visual reproduction of Goodfire's private Silico application or use of Goodfire trademarks and proprietary assets.
+- Exact visual reproduction of any private third-party application or use of third-party trademarks and proprietary assets.
 - Claims of complete mechanistic explanations, consciousness, or guaranteed causal interpretation.
 
 ## Further Notes
 
-- The initial Gemma target is `google/gemma-3-1b-it`, with the compatible pre-fitted artifact from `neuronpedia/jacobian-lens`. Its use depends on accepting Google's model license on Hugging Face and configuring an HF token as a Modal secret.
+- The initial Gemma target is `google/gemma-3-1b-it`, with a compatible pre-fitted artifact pinned in the runtime registry. Its use depends on accepting the model license on Hugging Face and configuring an HF token as a Modal secret.
 - The initial Qwen target is `Qwen/Qwen3-1.7B`, which is public, ungated, and Apache-2.0.
 - Anthropic's Jacobian Lens reference implementation is pinned to commit `581d398613e5602a5af361e1c34d3a92ea82ba8e` and is used under Apache-2.0 with attribution.
 - The product should expose cold-start reality honestly. Switching models may take time on the first request, but subsequent runs should reuse cached artifacts and warm containers where available.

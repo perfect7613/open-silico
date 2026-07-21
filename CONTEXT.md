@@ -24,12 +24,11 @@ Mechanoscope is an interpretability workbench for running reproducible experimen
 - Modal is a cloud Adapter around the Remote Model Runtime and Technique Engines.
 - HTTP and generated TypeScript clients are transport Adapters around backend contracts.
 
-## Product boundary and competitive context
+## Product boundary and market context
 
-This section is a standing instruction for product work. Re-check the linked primary sources before making time-sensitive claims.
+This section is a standing instruction for product work. Public interpretability atlases already provide broad datasets, feature search, model readouts, steering, circuit tools, APIs, and community releases. Closed model-design environments emphasize managed infrastructure, diagnostics, agent-planned experiments, and team workflows. Research repositories and notebooks remain the fastest route to new techniques.
 
-- [Neuronpedia](https://www.neuronpedia.org/) is the open public library and tool ecosystem for mechanistic interpretability. It hosts large activation and explanation datasets plus SAE features, search, steering, circuit tracing, Jacobian Lens, Natural Language Autoencoders, Assistant Axis, APIs, and community releases. Its open-source repository describes a broad, service-oriented platform. Mechanoscope must not claim to beat Neuronpedia on corpus breadth, model count, or existing technique count.
-- [Goodfire Silico](https://www.goodfire.ai/silico) is positioned as a private model-design environment for teams training models. Its public material emphasizes frontier interpretability, agent-planned experiments, health checks, debugging, intervention, data debugging, and infrastructure at frontier scale. Mechanoscope must not imitate Goodfire branding or claim knowledge of non-public product behavior.
+Mechanoscope should not publicly name or compare itself with individual products. Describe the market by category, acknowledge existing strengths, and make only verifiable claims about Mechanoscope itself. It should not claim leadership in corpus breadth, model count, technique count, or private capabilities it cannot inspect.
 
 ## Product thesis and moat
 
@@ -49,4 +48,4 @@ Product decisions should follow these rules:
 - expose controls, revisions, failures, and caveats as first-class evidence;
 - make valuable results replayable, forkable, comparable, and citeable;
 - create approachable share artifacts without simplifying scientific uncertainty away; and
-- describe competitive differences as public-positioning comparisons, not unverifiable superiority claims.
+- describe differentiation by product category, without naming competitors or making unverifiable superiority claims.
