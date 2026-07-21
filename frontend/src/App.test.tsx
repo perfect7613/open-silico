@@ -81,12 +81,14 @@ describe('Mechanoscope model rack', () => {
 
     render(<App />)
     await screen.findByRole('heading', { name: 'Qwen3 1.7B' })
+    expect(screen.queryByText(/Short on time/i)).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /Research copilot/i }))
 
     expect(screen.getByRole('heading', { name: /From a hunch toauditable evidence/i })).toBeInTheDocument()
     expect(screen.getByLabelText('Research copilot workflow')).toHaveTextContent('Human GPU checkpoint')
     expect(screen.getByText('GPU stays asleep until you say yes.')).toBeInTheDocument()
     expect(screen.getByText(/No plan is fabricated in the browser/i)).toBeInTheDocument()
+    expect(screen.queryByText(/mechanoscope-mcp\.modal\.run/i)).not.toBeInTheDocument()
     expect(screen.getByText('bea87f1c-af24-48ea-af65-1f0030759a03')).toBeInTheDocument()
     expect(screen.getByText(/not representation lineage/i)).toBeInTheDocument()
   })

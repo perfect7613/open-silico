@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 
 import type { ModelSummary } from './api'
 
-const MCP_ENDPOINT = 'https://ameymuke252003--mechanoscope-mcp.modal.run/mcp'
 const VERIFIED_LENS_RECEIPT = 'bea87f1c-af24-48ea-af65-1f0030759a03'
 const VERIFIED_STEERING_RECEIPT = 'c4cf5bad-36d4-457b-8702-2f2624b102ea'
 
@@ -93,16 +92,6 @@ export function ResearchCopilot({
           </dl>
         </aside>
       </div>
-
-      <section className="copilot-connect" aria-labelledby="connect-title">
-        <div>
-          <p className="eyebrow">One-time connection</p>
-          <h3 id="connect-title">Give ChatGPT the research instruments</h3>
-          <p>Add this remote MCP server in ChatGPT Developer Mode, then paste the copied research prompt.</p>
-        </div>
-        <code>{MCP_ENDPOINT}</code>
-        <ClipboardButton value={MCP_ENDPOINT} label="Copy MCP endpoint" />
-      </section>
 
       <section className="receipt-proof" aria-labelledby="receipt-proof-title">
         <div>

@@ -368,12 +368,6 @@
 .journey-cards strong { font: 650 14px/1.2 var(--display); }
 .journey-cards small { color: var(--muted); font: 500 10px/1.5 var(--mono); }
 .journey-cards b { grid-column: 2; color: var(--cyan-dark); font: 700 9px var(--mono); text-transform: uppercase; }
-.demo-ribbon { margin-top: 12px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 18px; background: var(--ink); color: #dce9ea; }
-.demo-ribbon > span { display: flex; align-items: center; gap: 8px; font: 500 9px/1.45 var(--mono); }
-.demo-ribbon > span i { padding: 3px 5px; background: var(--acid); color: var(--ink); font: 800 7px/1 var(--mono); letter-spacing: .08em; }
-.demo-ribbon > span strong { color: #fff; white-space: nowrap; }
-.demo-ribbon button { flex: none; min-height: 31px; padding: 0 10px; border: 1px solid var(--acid); background: transparent; color: var(--acid); font: 750 8px var(--mono); text-transform: uppercase; cursor: pointer; }
-.demo-ribbon button:hover { background: var(--acid); color: var(--ink); }
 
 /* Research copilot: a guarded laboratory protocol, not a generic chatbot. */
 .copilot-workbench { min-height: calc(100vh - 135px); }
@@ -401,7 +395,7 @@
 .hypothesis-card textarea { width: 100%; padding: 15px; resize: vertical; border: 1px solid var(--line-strong); background: #fbfaf5; color: var(--ink); font: 500 12px/1.65 var(--mono); outline: none; }
 .hypothesis-card textarea:focus { border-color: var(--cyan-dark); box-shadow: 0 0 0 3px var(--focus); }
 .hypothesis-actions { display: flex; gap: 9px; margin-top: 12px; }
-.hypothesis-actions button, .hypothesis-actions a, .copilot-connect button, .receipt-actions button { min-height: 39px; display: inline-grid; place-items: center; padding: 0 14px; border: 1px solid var(--ink); background: var(--acid); color: var(--ink); font: 700 8px/1 var(--mono); text-decoration: none; text-transform: uppercase; cursor: pointer; }
+.hypothesis-actions button, .hypothesis-actions a, .receipt-actions button { min-height: 39px; display: inline-grid; place-items: center; padding: 0 14px; border: 1px solid var(--ink); background: var(--acid); color: var(--ink); font: 700 8px/1 var(--mono); text-decoration: none; text-transform: uppercase; cursor: pointer; }
 .hypothesis-actions a { background: transparent; }
 .hypothesis-actions button:hover, .receipt-actions button:hover { transform: translateY(-2px); box-shadow: 3px 3px 0 var(--ink); }
 .truth-note { margin: 14px 0 0; padding-left: 11px; border-left: 3px solid var(--cyan); color: var(--muted); font: 500 9px/1.55 var(--mono); }
@@ -415,11 +409,8 @@
 .approval-card dl div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid #40535a; font: 600 8px/1.2 var(--mono); text-transform: uppercase; }
 .approval-card dt { color: #8fa2a8; }
 .approval-card dd { margin: 0; color: var(--acid); text-align: right; }
-.copilot-connect { margin-top: 18px; padding: 20px; display: grid; grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.2fr) auto; gap: 18px; align-items: center; border: 1px solid var(--ink); background: var(--cyan-wash); }
-.copilot-connect h3, .receipt-proof h3 { margin: 0; font: 650 22px/1.1 var(--display); letter-spacing: -.03em; }
-.copilot-connect p:not(.eyebrow), .receipt-proof > div:first-child > p:last-child { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
-.copilot-connect code { padding: 12px; overflow: hidden; border: 1px dashed var(--cyan-dark); background: rgba(255,255,255,.7); color: var(--cyan-dark); font: 600 9px/1.35 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
-.copilot-connect button { background: var(--ink); color: var(--acid); }
+.receipt-proof h3 { margin: 0; font: 650 22px/1.1 var(--display); letter-spacing: -.03em; }
+.receipt-proof > div:first-child > p:last-child { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .receipt-proof { margin-top: 18px; padding: clamp(20px, 3vw, 34px); border: 1px solid var(--ink); background: var(--white); }
 .receipt-proof > div:first-child { display: grid; grid-template-columns: minmax(240px, .6fr) minmax(280px, 1fr); column-gap: 34px; align-items: end; }
 .receipt-proof > div:first-child .eyebrow, .receipt-proof > div:first-child h3 { grid-column: 1; }
@@ -442,7 +433,6 @@
   .journey-cards { grid-template-columns: 1fr; }
   .journey-cards button { min-height: 112px; border-right: 0; border-bottom: 1px solid var(--line-strong); }
   .journey-cards button:last-child { border-bottom: 0; }
-  .demo-ribbon { align-items: flex-start; flex-direction: column; }
 }
 
 .model-heading {
@@ -1109,7 +1099,6 @@
   .copilot-sequence li:not(:last-child)::after { content: '↓'; right: 20px; top: auto; bottom: -8px; }
   .copilot-grid { grid-template-columns: 1fr; }
   .hypothesis-card { border-right: 0; border-bottom: 1px solid var(--ink); }
-  .copilot-connect { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 650px) {

@@ -93,13 +93,11 @@ function GettingStarted({
   onLookInside,
   onSteer,
   onCheck,
-  onOpenDemo,
 }: {
   onOpenCopilot: () => void
   onLookInside: () => void
   onSteer: () => void
   onCheck: () => void
-  onOpenDemo: () => void
 }) {
   return (
     <section className="getting-started" aria-labelledby="getting-started-title">
@@ -120,10 +118,6 @@ function GettingStarted({
         <button type="button" onClick={onCheck}>
           <i>4</i><span><strong>Am I claiming too much?</strong><small>Check whether two saved runs are actually comparable.</small></span><b>Check a claim →</b>
         </button>
-      </div>
-      <div className="demo-ribbon">
-        <span><i>LIVE</i><strong>Short on time?</strong> Open real, replayable GPU receipts—including a steering miss the evidence does not hide.</span>
-        <button type="button" onClick={onOpenDemo}>Open the judge demo →</button>
       </div>
     </section>
   )
@@ -334,7 +328,6 @@ function App() {
               onLookInside={openLens}
               onSteer={openSteering}
               onCheck={() => setView('claim')}
-              onOpenDemo={() => setView('history')}
             />
           )}
 
