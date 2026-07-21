@@ -6,7 +6,7 @@ The immediate problem is to deliver a credible open-source vertical slice rather
 
 ## Solution
 
-Build Open Silico, an Apache-2.0 interpretability workbench backed by Modal GPUs. The MVP will expose a capability-aware model switcher with Gemma 3 1B Instruct and Qwen3 1.7B. Gemma is the preferred selection when its gated Hugging Face checkpoint is available; Qwen is the public, ungated fallback. The backend will report model availability and technique compatibility rather than allowing unsupported experiments to fail after submission.
+Build Mechanoscope, an Apache-2.0 interpretability workbench backed by Modal GPUs. The MVP will expose a capability-aware model switcher with Gemma 3 1B Instruct and Qwen3 1.7B. Gemma is the preferred selection when its gated Hugging Face checkpoint is available; Qwen is the public, ungated fallback. The backend will report model availability and technique compatibility rather than allowing unsupported experiments to fail after submission.
 
 The activation-steering workbench will use a Neuronpedia-inspired layout: a model and vector control rail, synchronized Default and Steered conversation panes, and one shared composer that runs both branches with matched generation parameters and seed. Steering directions will be computed from positive and negative activation examples and applied through temporary residual-stream hooks.
 
@@ -152,3 +152,118 @@ Each experiment will report the exact model, model revision, lens revision, tech
 - Anthropic's Jacobian Lens reference implementation is pinned to commit `581d398613e5602a5af361e1c34d3a92ea82ba8e` and is used under Apache-2.0 with attribution.
 - The product should expose cold-start reality honestly. Switching models may take time on the first request, but subsequent runs should reuse cached artifacts and warm containers where available.
 - The highest-value first tracer bullet is the models endpoint plus one remote J-Lens result for each model. Once model/lens compatibility is proven, both steering and the shared model-switcher UI can build on the same registry and runtime contract.
+
+## Phase 1 Delivery Plan — Trustworthy Experiment Loop
+
+Phase 1 turns the two working techniques into controlled research workflows. Completion means a researcher can form a hypothesis, run an intervention with appropriate controls, inspect evidence, and restore or share the exact experiment without an account.
+
+### Slice 1.1 — Complete the steering laboratory
+
+- Finish the existing preset and custom-vector slice with enable/disable controls for every contrast example.
+- Round-trip layer, strength, token limit, temperature, top-p, repetition penalty, seed mode, and special-token steering through the worker.
+- Add several model-specific presets whose expected effects are tested rather than inferred from labels.
+- Preserve the selected model when resetting an experiment.
+
+Exit criteria: the UI can express every supported steering setting; the backend rejects unsupported settings explicitly; preset recipes are visible and reproducible.
+
+### Slice 1.2 — Multi-turn paired experiments
+
+- Maintain separate Default and Steered histories while dispatching the same user message to both branches.
+- Associate each response pair with the exact intervention and generation settings used for that turn.
+- Restore unfinished browser-local sessions after refresh and support a conversation-only reset.
+- Provide tabs on narrow screens without losing the paired relationship.
+
+Exit criteria: divergent branches receive correct histories, refresh restoration is deterministic, and no conversation data is persisted on the server.
+
+### Slice 1.3 — Evidence sweeps and controls
+
+- Run strength and layer sweeps without requiring researchers to submit each setting manually.
+- Include zero-strength, negative-direction, and deterministic random-vector controls.
+- Repeat selected conditions across multiple seeds and prompts.
+- Report effect size, reproduction rate, target-concept score, fluency degradation, and warnings rather than asking users to judge one prose sample.
+- Keep batch size and token budgets bounded before a GPU job begins.
+
+Exit criteria: a steering claim can be supported by a dose response and controls, and failed or mixed interventions are reported honestly.
+
+### Slice 1.4 — Experiment records, replay, and sharing
+
+- Give J-Lens, 3D representation, steering, and sweep results one reproducibility envelope.
+- Retain a bounded recent history in browser storage with explicit deletion.
+- Export a self-contained, versioned configuration that excludes secrets and can be imported into a compatible workbench.
+- Show the model revision, technique artifact, prompt data path, settings, timing, warnings, and software revision.
+- Defer public hosted URLs until server-side persistence is an intentional product decision.
+
+Exit criteria: another browser can import a record and reconstruct the same runnable configuration; incompatible records fail with actionable messages.
+
+### Slice 1.5 — Compute safety and observability
+
+- Estimate GPU, cold-start, and token cost before submission.
+- Expose queued, loading, running, complete, failed, cancelled, and sleeping states.
+- Add cancellation and one-click worker shutdown without presenting cancellation as guaranteed after a model operation becomes non-interruptible.
+- Enforce hard request, batch, duration, and retention limits.
+
+Exit criteria: users know whether compute is active, can bound spend before running, and can stop idle capacity without using the Modal dashboard.
+
+## Phase 2 Delivery Plan — Bring Any Compatible Open Model
+
+Phase 2 changes the product from a two-model demonstration into a capability-aware platform. “Any model” means a model whose architecture can satisfy an installed technique adapter; it does not mean silently presenting incomplete or invalid results.
+
+### Slice 2.1 — Authoritative model catalog
+
+- Make the Model Registry the single source for checkpoint identity, pinned revision, tokenizer, model family, layer layout, dtype, GPU requirement, access state, default controls, steering calibration, and technique artifacts.
+- Remove duplicated model facts and key unions from the Modal worker and frontend.
+- Validate registry entries during startup and CI.
+
+Exit criteria: adding or changing a registered model is local to the registry and its genuinely model-specific adapter, while every surface reports the same capabilities.
+
+### Slice 2.2 — Hugging Face onboarding and compatibility report
+
+- Accept a Hugging Face model ID and optional revision without downloading weights to the browser or developer workstation.
+- Inspect public configuration and tokenizer metadata first, before allocating a GPU.
+- Report architecture family, parameter estimate, gated-access requirements, compatible techniques, missing artifacts, estimated GPU class, and expected cold start.
+- Require an explicit confirmation before persisting a new private registry entry or starting paid compute.
+
+Exit criteria: unsupported models fail during inspection with a reason; supported models produce a stable draft catalog entry.
+
+### Slice 2.3 — Remote model runtime adapters
+
+- Isolate model loading, residual-block discovery, activation capture, intervention placement, generation, device selection, and cleanup from Modal deployment details.
+- Add a second runtime adapter only when another execution provider is actually supported; Modal remains the first concrete adapter.
+- Test scientific behavior with tiny deterministic models and reserve remote smoke tests for real artifacts.
+
+Exit criteria: technique behavior can be verified without deploying a GPU worker, and Modal lifecycle changes do not require editing the scientific implementations.
+
+### Slice 2.4 — Technique compatibility and artifact registry
+
+- Register fitted J-Lens artifacts, steering layer ranges, probes, and future technique artifacts against exact model revisions and hidden dimensions.
+- Verify checksums, license/attribution, expected dimensions, and supported source layers before a technique becomes selectable.
+- Offer an explicit “artifact missing” state rather than substituting a different model revision or technique.
+
+Exit criteria: the workbench never shows a technique as runnable unless its model/artifact pairing has passed compatibility checks.
+
+### Slice 2.5 — Onboarding smoke run and promotion
+
+- Run a bounded tokenization check, one short generation, a strength-zero steering control, and a J-Lens dimension/readout check where an artifact exists.
+- Store structured results and promote the model from draft to ready only when required checks pass.
+- Produce actionable remediation for gated access, memory failure, tokenizer mismatch, missing layers, and lens incompatibility.
+
+Exit criteria: every ready model has machine-verifiable evidence that its advertised capabilities execute correctly.
+
+## Phase Metrics
+
+- Primary: median time from a user question to a controlled, replayable finding.
+- Trust: percentage of steering claims accompanied by controls and more than one seed.
+- Reproducibility: percentage of exported records successfully restored on the same pinned artifacts.
+- Extensibility: number of files outside the catalog and model-specific adapter changed to add a compatible model.
+- Efficiency: median GPU seconds and cold-start time per completed experiment, separated by model.
+
+## Platform Execution Lanes
+
+Mechanoscope separates scientific execution from development isolation:
+
+- **Modal GPU lane:** runs version-pinned model subjects and technique engines. Modal is an adapter around the remote runtime, not the owner of scientific behavior.
+- **Daytona validation lane:** Crabbox creates clean, disposable Linux sandboxes for backend, frontend, generated-contract, and full verification jobs. These jobs never receive model weights or production secrets by default.
+- **Desktop inspection lane:** WebVNC runs through a Crabbox provider that advertises desktop capability. The Daytona adapter currently provides SSH and synchronization only, so local Docker is the preferred desktop provider; AWS or Hetzner are optional paid alternatives.
+- **Local orchestration lane:** the developer machine owns configuration and dispatch, while credentials remain in environment variables or provider secret stores rather than repository files.
+
+The initial sandbox setup is complete when all four Crabbox jobs can hydrate from a clean checkout, generated contracts fail on drift, idle sandboxes stop automatically, and no provider credential appears in a sync plan or Git diff.

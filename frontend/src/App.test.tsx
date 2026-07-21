@@ -26,6 +26,8 @@ const catalog = {
         { id: 'activation_steering', label: 'Activation Steering' },
       ],
       default_layer: 18,
+      max_layer: 25,
+      recommended_steering_strength: 0.3,
       parameter_count: '1B',
     },
     {
@@ -47,6 +49,8 @@ const catalog = {
         { id: 'activation_steering', label: 'Activation Steering', implementation_state: 'available' },
       ],
       default_layer: 18,
+      max_layer: 27,
+      recommended_steering_strength: 1,
       parameter_count: '1.7B',
     },
   ],
@@ -64,7 +68,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Open Silico model rack', () => {
+describe('Mechanoscope model rack', () => {
   it('selects the available default and explains gated model access', async () => {
     const fetchMock = vi.fn((request: RequestInfo | URL) => {
       const url = request.toString()
@@ -91,7 +95,7 @@ describe('Open Silico model rack', () => {
 
     render(<App />)
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Open Silico API returned 503.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mechanoscope API returned 503.')
     expect(screen.getByRole('button', { name: 'Retry calibration' })).toBeEnabled()
   })
 
@@ -149,6 +153,15 @@ describe('Open Silico model rack', () => {
     expect(await screen.findByText('ARGMAX · LAYER × POS')).toBeInTheDocument()
     expect(screen.getByText('PINNED TOKEN RANK · FULL VOCAB')).toBeInTheDocument()
     expect(screen.getByText('1 POS × 2 LAYERS')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Split view' })).toHaveAttribute('aria-pressed', 'true')
+    expect(await screen.findByText('3D rendering is unavailable.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '3D volume' }))
+    expect(screen.queryByText('ARGMAX · LAYER × POS')).not.toBeInTheDocument()
+    expect(screen.getByText('task · rank landscape')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '2D instrument' }))
+    expect(screen.getByText('ARGMAX · LAYER × POS')).toBeInTheDocument()
   })
 
   it('runs a paired activation-steering experiment', async () => {

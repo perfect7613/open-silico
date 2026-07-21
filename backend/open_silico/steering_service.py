@@ -16,7 +16,7 @@ class ModalActivationSteeringRunner:
 
     def run(self, request: ActivationSteeringRequest) -> ActivationSteeringResponse:
         try:
-            worker_cls = modal.Cls.from_name(self.app_name, "OpenSilicoModel")
+            worker_cls = modal.Cls.from_name(self.app_name, "ModelSubjectWorker")
             payload = worker_cls(model_key=request.model_key).steer.remote(request.model_dump())
             return ActivationSteeringResponse.model_validate(payload)
         except JacobianLensExecutionError:

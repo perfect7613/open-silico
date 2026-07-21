@@ -5,6 +5,7 @@ import {
   type ActivationSteeringResponse,
   type ModelSummary,
 } from './api'
+import { executeExperiment } from './experiments/experimentRecord'
 
 const PRESETS = {
   cats: {
@@ -43,7 +44,7 @@ const lines = (value: string) => value.split('\n').map((item) => item.trim()).fi
 export function SteeringWorkbench({ model }: { model: ModelSummary }) {
   const [positive, setPositive] = useState(PRESETS.cats.positive.join('\n'))
   const [negative, setNegative] = useState(PRESETS.cats.negative.join('\n'))
-  const recommendedStrength = model.key === 'gemma-3-1b-it' ? 0.3 : 1
+  const recommendedStrength = model.recommended_steering_strength
   const [prompt, setPrompt] = useState<string>(PRESETS.cats.prompt)
   const [layer, setLayer] = useState(model.default_layer)
   const [strength, setStrength] = useState(recommendedStrength)
@@ -70,8 +71,8 @@ export function SteeringWorkbench({ model }: { model: ModelSummary }) {
     setRunning(true)
     setError(null)
     try {
-      const next = await runActivationSteering({
-        model_key: model.key as 'qwen3-1.7b' | 'gemma-3-1b-it',
+      const request = {
+        model_key: model.key,
         prompt,
         positive_examples: lines(positive),
         negative_examples: lines(negative),
@@ -81,6 +82,12 @@ export function SteeringWorkbench({ model }: { model: ModelSummary }) {
         temperature,
         top_p: 0.9,
         seed,
+      }
+      const next = await executeExperiment({
+        technique: 'activation_steering',
+        modelKey: model.key,
+        request,
+        execute: runActivationSteering,
       })
       setResult(next)
     } catch (runError) {
@@ -115,7 +122,7 @@ export function SteeringWorkbench({ model }: { model: ModelSummary }) {
         </div>
 
         <div className="steering-dials">
-          <label>Layer <output>L{layer}</output><input type="range" min="0" max={model.key === 'gemma-3-1b-it' ? 25 : 27} value={layer} onChange={(event) => setLayer(Number(event.target.value))} /></label>
+          <label>Layer <output>L{layer}</output><input type="range" min="0" max={model.max_layer} value={layer} onChange={(event) => setLayer(Number(event.target.value))} /></label>
           <label>Strength <output>{strength.toFixed(2)}×</output><input type="range" min="-4" max="4" step="0.1" value={strength} onChange={(event) => setStrength(Number(event.target.value))} /></label>
           <label>Tokens<input type="number" min="1" max="128" value={maxTokens} onChange={(event) => setMaxTokens(Number(event.target.value))} /></label>
           <label>Temperature<input type="number" min="0" max="2" step="0.1" value={temperature} onChange={(event) => setTemperature(Number(event.target.value))} /></label>

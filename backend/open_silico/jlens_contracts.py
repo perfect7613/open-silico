@@ -2,12 +2,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from open_silico.model_specs import validate_model_key
+
 
 class JacobianLensRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     prompt: str = Field(min_length=1, max_length=4000)
-    model_key: Literal["qwen3-1.7b", "gemma-3-1b-it"] = "qwen3-1.7b"
+    model_key: str = "qwen3-1.7b"
     max_tokens: int = Field(default=64, ge=1, le=128)
     top_k: int = Field(default=10, ge=1, le=10)
 
@@ -17,6 +19,8 @@ class JacobianLensRequest(BaseModel):
         if not value.strip():
             raise ValueError("prompt must contain non-whitespace text")
         return value
+
+    _model_must_be_registered = field_validator("model_key")(validate_model_key)
 
 
 class InputToken(BaseModel):

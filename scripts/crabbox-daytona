@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command -v daytona >/dev/null || {
+  echo "daytona CLI is required" >&2
+  exit 1
+}
+command -v crabbox >/dev/null || {
+  echo "crabbox CLI is required" >&2
+  exit 1
+}
+command -v jq >/dev/null || {
+  echo "jq is required to read the active Daytona CLI profile" >&2
+  exit 1
+}
+
+daytona list >/dev/null
+
+if [[ -n "${DAYTONA_CONFIG_DIR:-}" ]]; then
+  daytona_config_file="${DAYTONA_CONFIG_DIR}/config.json"
+elif [[ "$(uname -s)" == "Darwin" ]]; then
+  daytona_config_file="${HOME}/Library/Application Support/daytona/config.json"
+else
+  daytona_config_file="${XDG_CONFIG_HOME:-${HOME}/.config}/daytona/config.json"
+fi
+
+if [[ ! -f "$daytona_config_file" ]]; then
+  echo "Daytona CLI profile not found; run 'daytona login' first" >&2
+  exit 1
+fi
+
+daytona_profile_id="$(jq -r '.activeProfile' "$daytona_config_file")"
+export DAYTONA_JWT_TOKEN="$(
+  jq -r --arg profile "$daytona_profile_id" \
+    '.profiles[] | select(.id == $profile) | .api.token.accessToken' \
+    "$daytona_config_file"
+)"
+export DAYTONA_ORGANIZATION_ID="$(
+  jq -r --arg profile "$daytona_profile_id" \
+    '.profiles[] | select(.id == $profile) | .activeOrganizationId' \
+    "$daytona_config_file"
+)"
+
+if [[ -z "$DAYTONA_JWT_TOKEN" || "$DAYTONA_JWT_TOKEN" == "null" ]]; then
+  echo "Active Daytona profile does not contain an access token" >&2
+  exit 1
+fi
+if [[ -z "$DAYTONA_ORGANIZATION_ID" || "$DAYTONA_ORGANIZATION_ID" == "null" ]]; then
+  echo "Active Daytona profile does not select an organization" >&2
+  exit 1
+fi
+
+export CRABBOX_DAYTONA_API_URL="https://app.daytona.io/api"
+export CRABBOX_DAYTONA_SSH_GATEWAY_HOST="ssh.app.daytona.io"
+
+exec crabbox "$@"

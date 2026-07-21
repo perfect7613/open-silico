@@ -10,8 +10,8 @@ pytestmark = pytest.mark.remote
 
 
 @pytest.mark.skipif(
-    os.getenv("OPEN_SILICO_RUN_MODAL_SMOKE") != "1",
-    reason="set OPEN_SILICO_RUN_MODAL_SMOKE=1 after deploying backend/modal_app.py",
+    os.getenv("MECHANOSCOPE_RUN_MODAL_SMOKE") != "1",
+    reason="set MECHANOSCOPE_RUN_MODAL_SMOKE=1 after deploying backend/modal_app.py",
 )
 @pytest.mark.parametrize(
     ("model_key", "model_revision"),
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.remote
     ],
 )
 def test_deployed_jlens_returns_real_rows(model_key: str, model_revision: str) -> None:
-    response = ModalJacobianLensRunner("open-silico-jlens").run(
+    response = ModalJacobianLensRunner("mechanoscope").run(
         JacobianLensRequest(
             model_key=model_key,
             prompt="The opposite of hot is",
@@ -38,12 +38,12 @@ def test_deployed_jlens_returns_real_rows(model_key: str, model_revision: str) -
 
 
 @pytest.mark.skipif(
-    os.getenv("OPEN_SILICO_RUN_MODAL_SMOKE") != "1",
-    reason="set OPEN_SILICO_RUN_MODAL_SMOKE=1 after deploying backend/modal_app.py",
+    os.getenv("MECHANOSCOPE_RUN_MODAL_SMOKE") != "1",
+    reason="set MECHANOSCOPE_RUN_MODAL_SMOKE=1 after deploying backend/modal_app.py",
 )
 @pytest.mark.parametrize("model_key", ["qwen3-1.7b", "gemma-3-1b-it"])
 def test_deployed_strength_zero_is_a_matched_control(model_key: str) -> None:
-    response = ModalActivationSteeringRunner("open-silico-jlens").run(
+    response = ModalActivationSteeringRunner("mechanoscope").run(
         ActivationSteeringRequest(
             model_key=model_key,
             prompt="Describe an ideal companion in one sentence.",
@@ -63,11 +63,11 @@ def test_deployed_strength_zero_is_a_matched_control(model_key: str) -> None:
 
 
 @pytest.mark.skipif(
-    os.getenv("OPEN_SILICO_RUN_MODAL_SMOKE") != "1",
-    reason="set OPEN_SILICO_RUN_MODAL_SMOKE=1 after deploying backend/modal_app.py",
+    os.getenv("MECHANOSCOPE_RUN_MODAL_SMOKE") != "1",
+    reason="set MECHANOSCOPE_RUN_MODAL_SMOKE=1 after deploying backend/modal_app.py",
 )
 def test_deployed_gemma_cat_preset_has_visible_topic_effect() -> None:
-    response = ModalActivationSteeringRunner("open-silico-jlens").run(
+    response = ModalActivationSteeringRunner("mechanoscope").run(
         ActivationSteeringRequest(
             model_key="gemma-3-1b-it",
             prompt=(

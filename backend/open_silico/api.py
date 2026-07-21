@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from open_silico import __version__
 from open_silico.config import Settings, get_settings
+from open_silico.experiment_contracts import ExperimentEnvelope, ExperimentRequest
+from open_silico.experiment_orchestrator import ExperimentOrchestrator
 from open_silico.jlens_contracts import (
     JacobianLensRequest,
     JacobianLensResponse,
@@ -13,8 +15,8 @@ from open_silico.jlens_service import (
     JacobianLensRunner,
     ModalJacobianLensRunner,
 )
-from open_silico.model_registry import build_catalog
-from open_silico.schemas import HealthResponse, ModelCatalog
+from open_silico.model_registry import build_catalog, build_technique_catalog
+from open_silico.schemas import HealthResponse, ModelCatalog, TechniqueCatalog
 from open_silico.steering_contracts import ActivationSteeringRequest, ActivationSteeringResponse
 from open_silico.steering_service import ActivationSteeringRunner, ModalActivationSteeringRunner
 
@@ -27,9 +29,9 @@ def create_app(
 ) -> FastAPI:
     active_settings = settings or get_settings()
     app = FastAPI(
-        title="Open Silico API",
+        title="Mechanoscope API",
         version=__version__,
-        description="Capability catalog and experiment gateway for Open Silico.",
+        description="Capability catalog and experiment gateway for Mechanoscope.",
     )
     app.add_middleware(
         CORSMiddleware,
@@ -46,6 +48,35 @@ def create_app(
     @app.get("/api/models", response_model=ModelCatalog, tags=["models"])
     def models() -> ModelCatalog:
         return build_catalog(active_settings)
+
+    @app.get("/api/techniques", response_model=TechniqueCatalog, tags=["techniques"])
+    def techniques() -> TechniqueCatalog:
+        return build_technique_catalog()
+
+    @app.post(
+        "/api/experiments/run",
+        response_model=ExperimentEnvelope,
+        responses={503: {"model": PublicError}, 504: {"model": PublicError}},
+        tags=["experiments"],
+    )
+    def run_experiment(request: ExperimentRequest) -> ExperimentEnvelope:
+        orchestrator = ExperimentOrchestrator(
+            jlens_runner=jlens_runner
+            or ModalJacobianLensRunner(active_settings.modal_jlens_app_name),
+            steering_runner=steering_runner
+            or ModalActivationSteeringRunner(active_settings.modal_jlens_app_name),
+        )
+        try:
+            return orchestrator.run(request)
+        except JacobianLensExecutionError as error:
+            raise HTTPException(
+                status_code=error.status_code,
+                detail=PublicError(
+                    code=error.code,
+                    message=str(error),
+                    retryable=error.retryable,
+                ).model_dump(),
+            ) from error
 
     @app.post(
         "/api/jlens/run",

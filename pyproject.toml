@@ -1,5 +1,5 @@
 [project]
-name = "open-silico"
+name = "mechanoscope"
 version = "0.1.0"
 description = "Open-source interpretability workbench for open-weight language models"
 readme = "README.md"

@@ -2,11 +2,13 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from open_silico.model_specs import validate_model_key
+
 
 class ActivationSteeringRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    model_key: Literal["qwen3-1.7b", "gemma-3-1b-it"] = "qwen3-1.7b"
+    model_key: str = "qwen3-1.7b"
     prompt: str = Field(min_length=1, max_length=4000)
     positive_examples: list[str] = Field(min_length=1, max_length=8)
     negative_examples: list[str] = Field(min_length=1, max_length=8)
@@ -16,6 +18,8 @@ class ActivationSteeringRequest(BaseModel):
     temperature: float = Field(default=0.7, ge=0, le=2)
     top_p: float = Field(default=0.9, gt=0, le=1)
     seed: int = Field(default=16, ge=0, le=2**31 - 1)
+
+    _model_must_be_registered = field_validator("model_key")(validate_model_key)
 
     @field_validator("prompt")
     @classmethod

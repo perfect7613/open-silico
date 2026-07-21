@@ -1,62 +1,41 @@
-from dataclasses import dataclass
-
 from open_silico.config import Settings
-from open_silico.schemas import ModelAccess, ModelCatalog, ModelSummary, TechniqueSummary
+from open_silico.model_specs import MODEL_SPECS, ModelSpec
+from open_silico.schemas import (
+    ModelAccess,
+    ModelCatalog,
+    ModelSummary,
+    TechniqueCatalog,
+    TechniqueSummary,
+)
+from open_silico.technique_registry import TECHNIQUE_SPECS, TECHNIQUE_SPECS_BY_ID
 
-TECHNIQUES = (
-    TechniqueSummary(id="jacobian_lens", label="Jacobian Lens"),
-    TechniqueSummary(id="activation_steering", label="Activation Steering"),
+TECHNIQUES = tuple(
+    TechniqueSummary(
+        id=spec.id,
+        label=spec.label,
+        kind=spec.kind,
+        description=spec.description,
+        requires_artifact=spec.requires_artifact,
+        supports_sweeps=spec.supports_sweeps,
+    )
+    for spec in TECHNIQUE_SPECS
 )
 
 
 def _techniques_for(spec: "ModelSpec") -> tuple[TechniqueSummary, ...]:
     return tuple(
         TechniqueSummary(
-            id=technique.id,
-            label=technique.label,
+            id=technique_spec.id,
+            label=technique_spec.label,
+            kind=technique_spec.kind,
+            description=technique_spec.description,
+            requires_artifact=technique_spec.requires_artifact,
+            supports_sweeps=technique_spec.supports_sweeps,
             implementation_state="available",
         )
-        for technique in TECHNIQUES
+        for technique_id in spec.capabilities
+        for technique_spec in (TECHNIQUE_SPECS_BY_ID[technique_id],)
     )
-
-
-@dataclass(frozen=True, slots=True)
-class ModelSpec:
-    key: str
-    display_name: str
-    provider: str
-    model_id: str
-    revision: str
-    license_name: str
-    gated: bool
-    default_layer: int
-    parameter_count: str
-
-
-MODEL_SPECS = (
-    ModelSpec(
-        key="gemma-3-1b-it",
-        display_name="Gemma 3 1B Instruct",
-        provider="Google DeepMind",
-        model_id="google/gemma-3-1b-it",
-        revision="dcc83ea841ab6100d6b47a070329e1ba4cf78752",
-        license_name="Gemma Terms of Use",
-        gated=True,
-        default_layer=18,
-        parameter_count="1B",
-    ),
-    ModelSpec(
-        key="qwen3-1.7b",
-        display_name="Qwen3 1.7B",
-        provider="Qwen",
-        model_id="Qwen/Qwen3-1.7B",
-        revision="70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
-        license_name="Apache-2.0",
-        gated=False,
-        default_layer=18,
-        parameter_count="1.7B",
-    ),
-)
 
 
 def _access_for(spec: ModelSpec, settings: Settings) -> ModelAccess:
@@ -91,6 +70,8 @@ def build_catalog(settings: Settings) -> ModelCatalog:
             access=_access_for(spec, settings),
             techniques=_techniques_for(spec),
             default_layer=spec.default_layer,
+            max_layer=spec.max_layer,
+            recommended_steering_strength=spec.recommended_steering_strength,
             parameter_count=spec.parameter_count,
         )
         for spec in MODEL_SPECS
@@ -100,3 +81,7 @@ def build_catalog(settings: Settings) -> ModelCatalog:
         "qwen3-1.7b",
     )
     return ModelCatalog(models=models, default_model=default_model)
+
+
+def build_technique_catalog() -> TechniqueCatalog:
+    return TechniqueCatalog(techniques=TECHNIQUES)

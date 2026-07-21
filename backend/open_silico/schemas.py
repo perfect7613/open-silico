@@ -2,7 +2,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-TechniqueId = Literal["jacobian_lens", "activation_steering"]
 AccessState = Literal["available", "requires_access", "unavailable"]
 RuntimeState = Literal["idle", "loading", "ready", "error"]
 
@@ -10,9 +9,17 @@ RuntimeState = Literal["idle", "loading", "ready", "error"]
 class TechniqueSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    id: TechniqueId
+    id: str
     label: str
+    kind: Literal["observation", "intervention", "attribution", "training"]
+    description: str
+    requires_artifact: bool
+    supports_sweeps: bool
     implementation_state: Literal["declared", "available"] = "declared"
+
+
+class TechniqueCatalog(BaseModel):
+    techniques: tuple[TechniqueSummary, ...]
 
 
 class ModelAccess(BaseModel):
@@ -37,6 +44,8 @@ class ModelSummary(BaseModel):
     runtime_state: RuntimeState = "idle"
     techniques: tuple[TechniqueSummary, ...]
     default_layer: int
+    max_layer: int
+    recommended_steering_strength: float
     parameter_count: str
 
 
@@ -47,7 +56,7 @@ class ModelCatalog(BaseModel):
 
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
-    service: str = "open-silico-api"
+    service: str = "mechanoscope-api"
     version: str
     environment: str
     catalog_state: Literal["ready"] = "ready"

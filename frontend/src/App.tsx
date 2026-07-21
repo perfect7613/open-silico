@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import './App.css'
 import { JacobianLensWorkbench } from './JacobianLensWorkbench'
 import { SteeringWorkbench } from './SteeringWorkbench'
+import { ExperimentHistory } from './experiments/ExperimentHistory'
 import {
   fetchHealth,
   fetchModelCatalog,
@@ -178,9 +179,9 @@ function ModelInstrument({
                 <span className="slice-number">{lens ? 'SLICE 02' : 'SLICE 05'}</span>
                 <h4>{technique.label}</h4>
                 <p>
-                  {lens
+                  {technique.description || (lens
                     ? 'Read token-like representations across residual layers and positions.'
-                    : 'Derive a contrast direction, intervene, and compare matched generations.'}
+                    : 'Derive a contrast direction, intervene, and compare matched generations.')}
                 </p>
                 <button type="button" disabled={!available} onClick={lens ? onOpenLens : onOpenSteering}>
                   {available ? `Open ${technique.label} →` : !accessible ? 'Model access required' : `${technique.label} runtime queued`}
@@ -200,7 +201,7 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'models' | 'jlens' | 'steering'>('models')
+  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'history'>('models')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -239,10 +240,10 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="Open Silico home">
+        <a className="brand" href="/" aria-label="Mechanoscope home">
           <span className="brand-mark"><SignalIcon kind="model" /></span>
           <span>
-            <strong>OPEN SILICO</strong>
+            <strong>MECHANOSCOPE</strong>
             <small>MODEL OBSERVATORY / 0.1</small>
           </span>
         </a>
@@ -250,6 +251,7 @@ function App() {
           <button className={view === 'models' ? 'is-active' : ''} type="button" onClick={() => setView('models')}>Models</button>
           <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Jacobian Lens <span>02</span></button>
           <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Steering <span>05</span></button>
+          <button className={view === 'history' ? 'is-active' : ''} type="button" onClick={() => setView('history')}>Experiments <span>25</span></button>
         </nav>
         <a className="issue-link" href={`https://github.com/perfect7613/open-silico/issues/${view === 'jlens' ? 5 : view === 'steering' ? 6 : 2}`} target="_blank" rel="noreferrer">
           Slice {view === 'jlens' ? '04' : view === 'steering' ? '05' : '01'} ↗
@@ -316,6 +318,7 @@ function App() {
           {!loading && !error && selectedModel && view === 'steering' && (
             <SteeringWorkbench model={selectedModel} />
           )}
+          {!loading && !error && view === 'history' && <ExperimentHistory />}
         </main>
       </div>
 

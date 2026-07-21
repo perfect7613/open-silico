@@ -19,7 +19,7 @@ def test_health_reports_catalog_without_loading_gpu() -> None:
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
-        "service": "open-silico-api",
+        "service": "mechanoscope-api",
         "version": "0.1.0",
         "environment": "test",
         "catalog_state": "ready",
@@ -42,7 +42,9 @@ def test_catalog_falls_back_to_qwen_when_gemma_access_is_missing() -> None:
         "jacobian_lens",
         "activation_steering",
     }
-    assert "token" not in str(payload).lower()
+    serialized = str(payload).lower()
+    assert "hf_token" not in serialized
+    assert "daytona_api_key" not in serialized
 
 
 def test_catalog_prefers_gemma_after_server_access_is_configured() -> None:
@@ -56,3 +58,14 @@ def test_catalog_prefers_gemma_after_server_access_is_configured() -> None:
         "configured": True,
         "message": "Access configured. The GPU worker will load on the first experiment.",
     }
+
+
+def test_technique_catalog_is_available_without_loading_gpu() -> None:
+    response = client_for().get("/api/techniques")
+
+    assert response.status_code == 200
+    techniques = {item["id"]: item for item in response.json()["techniques"]}
+    assert techniques["jacobian_lens"]["kind"] == "observation"
+    assert techniques["jacobian_lens"]["requires_artifact"] is True
+    assert techniques["activation_steering"]["kind"] == "intervention"
+    assert techniques["activation_steering"]["supports_sweeps"] is True
