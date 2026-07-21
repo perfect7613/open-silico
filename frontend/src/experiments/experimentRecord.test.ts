@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   clearExperimentRecords,
   deleteExperimentRecord,
+  diffExperimentRecords,
   executeExperiment,
   loadExperimentRecords,
 } from './experimentRecord'
@@ -65,5 +66,45 @@ describe('browser-local experiment records', () => {
     })
     clearExperimentRecords()
     expect(loadExperimentRecords()).toEqual([])
+  })
+
+  it('retains lineage and discloses nested request and response differences', async () => {
+    await executeExperiment({
+      technique: 'activation_steering',
+      modelKey: 'qwen3-1.7b',
+      request: { prompt: 'Test.', strength: 1 },
+      execute: async () => ({ baseline: 'A', steered: 'B' }),
+    })
+    vi.stubGlobal('crypto', { randomUUID: () => 'record-2' })
+    await executeExperiment({
+      technique: 'activation_steering',
+      modelKey: 'qwen3-1.7b',
+      request: { prompt: 'Test.', strength: 2 },
+      execute: async () => ({ baseline: 'A', steered: 'Cat' }),
+      lineage: { parentId: 'record-1', operation: 'fork' },
+    })
+
+    const [fork, parent] = loadExperimentRecords()
+    expect(fork.lineage).toEqual({ parentId: 'record-1', operation: 'fork' })
+    expect(diffExperimentRecords(parent, fork)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ scope: 'request', path: 'request.strength', left: 1, right: 2 }),
+      expect.objectContaining({ scope: 'response', path: 'response.steered', left: 'B', right: 'Cat' }),
+    ]))
+  })
+
+  it('retains the authoritative server receipt id while returning the technique result', async () => {
+    const response = await executeExperiment({
+      technique: 'jacobian_lens',
+      modelKey: 'qwen3-1.7b',
+      request: { prompt: 'Test.' },
+      execute: async () => ({
+        __mechanoscopeExecution: true,
+        response: { rows: 2 },
+        serverExperimentId: 'server-42',
+      }),
+    })
+
+    expect(response).toEqual({ rows: 2 })
+    expect(loadExperimentRecords()[0].serverExperimentId).toBe('server-42')
   })
 })

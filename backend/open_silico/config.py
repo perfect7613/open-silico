@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     hf_access_configured: bool = False
     hf_secret_name: str = "huggingface-secret"
     modal_jlens_app_name: str = "mechanoscope"
+    experiment_db_path: str = ".data/mechanoscope-experiments.sqlite3"
 
     @property
     def cors_origin_list(self) -> list[str]:

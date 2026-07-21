@@ -37,4 +37,17 @@ class ExperimentEnvelope(BaseModel):
     status: Literal["complete"] = "complete"
     started_at: datetime
     finished_at: datetime
+    request: ExperimentRequest
     result: JacobianLensResponse | ActivationSteeringResponse
+    parent_experiment_id: str | None = None
+    lineage_operation: Literal["replay", "fork"] | None = None
+
+
+class ExperimentList(BaseModel):
+    experiments: list[ExperimentEnvelope]
+
+
+class ExperimentForkRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    request: ExperimentRequest

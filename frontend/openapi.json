@@ -227,6 +227,50 @@
             "title": "Finished At",
             "type": "string"
           },
+          "lineage_operation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "replay",
+                  "fork"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lineage Operation"
+          },
+          "parent_experiment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Experiment Id"
+          },
+          "request": {
+            "discriminator": {
+              "mapping": {
+                "activation_steering": "#/components/schemas/ActivationSteeringExperimentRequest",
+                "jacobian_lens": "#/components/schemas/JacobianLensExperimentRequest"
+              },
+              "propertyName": "technique_id"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/JacobianLensExperimentRequest"
+              },
+              {
+                "$ref": "#/components/schemas/ActivationSteeringExperimentRequest"
+              }
+            ],
+            "title": "Request"
+          },
           "result": {
             "anyOf": [
               {
@@ -265,9 +309,54 @@
           "technique_id",
           "started_at",
           "finished_at",
+          "request",
           "result"
         ],
         "title": "ExperimentEnvelope",
+        "type": "object"
+      },
+      "ExperimentForkRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "request": {
+            "discriminator": {
+              "mapping": {
+                "activation_steering": "#/components/schemas/ActivationSteeringExperimentRequest",
+                "jacobian_lens": "#/components/schemas/JacobianLensExperimentRequest"
+              },
+              "propertyName": "technique_id"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/JacobianLensExperimentRequest"
+              },
+              {
+                "$ref": "#/components/schemas/ActivationSteeringExperimentRequest"
+              }
+            ],
+            "title": "Request"
+          }
+        },
+        "required": [
+          "request"
+        ],
+        "title": "ExperimentForkRequest",
+        "type": "object"
+      },
+      "ExperimentList": {
+        "properties": {
+          "experiments": {
+            "items": {
+              "$ref": "#/components/schemas/ExperimentEnvelope"
+            },
+            "title": "Experiments",
+            "type": "array"
+          }
+        },
+        "required": [
+          "experiments"
+        ],
+        "title": "ExperimentList",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -908,6 +997,49 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/experiments": {
+      "get": {
+        "operationId": "list_experiments_api_experiments_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Experiments",
+        "tags": [
+          "experiments"
+        ]
+      }
+    },
     "/api/experiments/run": {
       "post": {
         "operationId": "run_experiment_api_experiments_run_post",
@@ -979,6 +1111,175 @@
           }
         },
         "summary": "Run Experiment",
+        "tags": [
+          "experiments"
+        ]
+      }
+    },
+    "/api/experiments/{experiment_id}": {
+      "delete": {
+        "operationId": "delete_experiment_api_experiments__experiment_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Experiment",
+        "tags": [
+          "experiments"
+        ]
+      },
+      "get": {
+        "operationId": "get_experiment_api_experiments__experiment_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentEnvelope"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Experiment",
+        "tags": [
+          "experiments"
+        ]
+      }
+    },
+    "/api/experiments/{experiment_id}/fork": {
+      "post": {
+        "operationId": "fork_experiment_api_experiments__experiment_id__fork_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperimentForkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentEnvelope"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fork Experiment",
+        "tags": [
+          "experiments"
+        ]
+      }
+    },
+    "/api/experiments/{experiment_id}/replay": {
+      "post": {
+        "operationId": "replay_experiment_api_experiments__experiment_id__replay_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentEnvelope"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replay Experiment",
         "tags": [
           "experiments"
         ]

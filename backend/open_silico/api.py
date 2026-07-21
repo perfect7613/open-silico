@@ -6,8 +6,18 @@ from fastapi.staticfiles import StaticFiles
 
 from open_silico import __version__
 from open_silico.config import Settings, get_settings
-from open_silico.experiment_contracts import ExperimentEnvelope, ExperimentRequest
+from open_silico.experiment_contracts import (
+    ExperimentEnvelope,
+    ExperimentForkRequest,
+    ExperimentList,
+    ExperimentRequest,
+)
 from open_silico.experiment_orchestrator import ExperimentOrchestrator
+from open_silico.experiment_repository import (
+    ExperimentRepository,
+    InMemoryExperimentRepository,
+    SqliteExperimentRepository,
+)
 from open_silico.jlens_contracts import (
     JacobianLensRequest,
     JacobianLensResponse,
@@ -29,9 +39,26 @@ def create_app(
     *,
     jlens_runner: JacobianLensRunner | None = None,
     steering_runner: ActivationSteeringRunner | None = None,
+    experiment_repository: ExperimentRepository | None = None,
     static_dir: str | Path | None = None,
 ) -> FastAPI:
     active_settings = settings or get_settings()
+    repository = experiment_repository or (
+        InMemoryExperimentRepository()
+        if active_settings.environment == "test"
+        else SqliteExperimentRepository(active_settings.experiment_db_path)
+    )
+    active_jlens_runner = jlens_runner or ModalJacobianLensRunner(
+        active_settings.modal_jlens_app_name
+    )
+    active_steering_runner = steering_runner or ModalActivationSteeringRunner(
+        active_settings.modal_jlens_app_name
+    )
+    orchestrator = ExperimentOrchestrator(
+        jlens_runner=active_jlens_runner,
+        steering_runner=active_steering_runner,
+        repository=repository,
+    )
     app = FastAPI(
         title="Mechanoscope API",
         version=__version__,
@@ -41,7 +68,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=active_settings.cors_origin_list,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
 
@@ -64,14 +91,92 @@ def create_app(
         tags=["experiments"],
     )
     def run_experiment(request: ExperimentRequest) -> ExperimentEnvelope:
-        orchestrator = ExperimentOrchestrator(
-            jlens_runner=jlens_runner
-            or ModalJacobianLensRunner(active_settings.modal_jlens_app_name),
-            steering_runner=steering_runner
-            or ModalActivationSteeringRunner(active_settings.modal_jlens_app_name),
-        )
         try:
             return orchestrator.run(request)
+        except JacobianLensExecutionError as error:
+            raise HTTPException(
+                status_code=error.status_code,
+                detail=PublicError(
+                    code=error.code,
+                    message=str(error),
+                    retryable=error.retryable,
+                ).model_dump(),
+            ) from error
+
+    @app.get(
+        "/api/experiments",
+        response_model=ExperimentList,
+        tags=["experiments"],
+    )
+    def list_experiments(limit: int = 25) -> ExperimentList:
+        bounded_limit = max(1, min(limit, 100))
+        return ExperimentList(experiments=repository.list(bounded_limit))
+
+    @app.get(
+        "/api/experiments/{experiment_id}",
+        response_model=ExperimentEnvelope,
+        tags=["experiments"],
+    )
+    def get_experiment(experiment_id: str) -> ExperimentEnvelope:
+        experiment = repository.get(experiment_id)
+        if experiment is None:
+            raise HTTPException(status_code=404, detail="Experiment not found")
+        return experiment
+
+    @app.delete(
+        "/api/experiments/{experiment_id}",
+        status_code=204,
+        tags=["experiments"],
+    )
+    def delete_experiment(experiment_id: str) -> None:
+        if not repository.delete(experiment_id):
+            raise HTTPException(status_code=404, detail="Experiment not found")
+
+    @app.post(
+        "/api/experiments/{experiment_id}/replay",
+        response_model=ExperimentEnvelope,
+        tags=["experiments"],
+    )
+    def replay_experiment(experiment_id: str) -> ExperimentEnvelope:
+        source = repository.get(experiment_id)
+        if source is None:
+            raise HTTPException(status_code=404, detail="Experiment not found")
+        try:
+            return orchestrator.run(
+                source.request,
+                parent_experiment_id=source.experiment_id,
+                lineage_operation="replay",
+            )
+        except JacobianLensExecutionError as error:
+            raise HTTPException(
+                status_code=error.status_code,
+                detail=PublicError(
+                    code=error.code,
+                    message=str(error),
+                    retryable=error.retryable,
+                ).model_dump(),
+            ) from error
+
+    @app.post(
+        "/api/experiments/{experiment_id}/fork",
+        response_model=ExperimentEnvelope,
+        tags=["experiments"],
+    )
+    def fork_experiment(
+        experiment_id: str,
+        fork: ExperimentForkRequest,
+    ) -> ExperimentEnvelope:
+        source = repository.get(experiment_id)
+        if source is None:
+            raise HTTPException(status_code=404, detail="Experiment not found")
+        if fork.request.technique_id != source.technique_id:
+            raise HTTPException(status_code=409, detail="A fork must retain its parent technique")
+        try:
+            return orchestrator.run(
+                fork.request,
+                parent_experiment_id=source.experiment_id,
+                lineage_operation="fork",
+            )
         except JacobianLensExecutionError as error:
             raise HTTPException(
                 status_code=error.status_code,
@@ -89,9 +194,8 @@ def create_app(
         tags=["jacobian-lens"],
     )
     def run_jacobian_lens(request: JacobianLensRequest) -> JacobianLensResponse:
-        runner = jlens_runner or ModalJacobianLensRunner(active_settings.modal_jlens_app_name)
         try:
-            return runner.run(request)
+            return active_jlens_runner.run(request)
         except JacobianLensExecutionError as error:
             raise HTTPException(
                 status_code=error.status_code,
@@ -111,11 +215,8 @@ def create_app(
     def run_activation_steering(
         request: ActivationSteeringRequest,
     ) -> ActivationSteeringResponse:
-        runner = steering_runner or ModalActivationSteeringRunner(
-            active_settings.modal_jlens_app_name
-        )
         try:
-            return runner.run(request)
+            return active_steering_runner.run(request)
         except JacobianLensExecutionError as error:
             raise HTTPException(
                 status_code=error.status_code,

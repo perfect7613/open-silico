@@ -13,6 +13,7 @@ dist/
 coverage/
 .vite/
 .modal/
+.data/
 .firecrawl/
 logs/
 *.log

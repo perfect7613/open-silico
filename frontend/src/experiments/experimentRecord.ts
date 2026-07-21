@@ -2,6 +2,11 @@ import type { TechniqueSummary } from '../api'
 
 export type ExperimentStatus = 'succeeded' | 'failed'
 
+export type ExperimentLineage = {
+  parentId: string
+  operation: 'replay' | 'fork'
+}
+
 export type ExperimentRecord<TRequest = unknown, TResponse = unknown> = {
   id: string
   technique: TechniqueSummary['id']
@@ -12,6 +17,30 @@ export type ExperimentRecord<TRequest = unknown, TResponse = unknown> = {
   request: TRequest
   response?: TResponse
   error?: string
+  lineage?: ExperimentLineage
+  serverExperimentId?: string
+}
+
+export type ExecutedExperiment<TResponse> = {
+  __mechanoscopeExecution: true
+  response: TResponse
+  serverExperimentId: string
+}
+
+function isExecutedExperiment<TResponse>(
+  value: TResponse | ExecutedExperiment<TResponse>,
+): value is ExecutedExperiment<TResponse> {
+  return typeof value === 'object'
+    && value !== null
+    && '__mechanoscopeExecution' in value
+    && value.__mechanoscopeExecution === true
+}
+
+export type ExperimentDifference = {
+  path: string
+  scope: 'identity' | 'request' | 'response'
+  left: unknown
+  right: unknown
 }
 
 const STORAGE_KEY = 'mechanoscope.experiments.v1'
@@ -46,29 +75,69 @@ export async function executeExperiment<TRequest, TResponse>({
   modelKey,
   request,
   execute,
+  lineage,
 }: {
   technique: TechniqueSummary['id']
   modelKey: string
   request: TRequest
-  execute: (request: TRequest) => Promise<TResponse>
+  execute: (request: TRequest) => Promise<TResponse | ExecutedExperiment<TResponse>>
+  lineage?: ExperimentLineage
 }): Promise<TResponse> {
   const id = crypto.randomUUID()
   const startedAt = new Date().toISOString()
   try {
-    const response = await execute(request)
+    const execution = await execute(request)
+    const recordedExecution = isExecutedExperiment(execution)
+    const response = recordedExecution ? execution.response : execution
     persist({
-      id, technique, modelKey, request, response, startedAt,
+      id, technique, modelKey, request, response, startedAt, lineage,
+      serverExperimentId: recordedExecution ? execution.serverExperimentId : undefined,
       completedAt: new Date().toISOString(), status: 'succeeded',
     })
     return response
   } catch (error) {
     persist({
-      id, technique, modelKey, request, startedAt,
+      id, technique, modelKey, request, startedAt, lineage,
       completedAt: new Date().toISOString(), status: 'failed',
       error: error instanceof Error ? error.message : 'Unknown experiment failure',
     })
     throw error
   }
+}
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const equal = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right)
+
+function collectDifferences(
+  scope: ExperimentDifference['scope'],
+  prefix: string,
+  left: unknown,
+  right: unknown,
+  output: ExperimentDifference[],
+) {
+  if (equal(left, right)) return
+  if (isObject(left) && isObject(right)) {
+    const keys = new Set([...Object.keys(left), ...Object.keys(right)])
+    for (const key of [...keys].sort()) {
+      collectDifferences(scope, prefix ? `${prefix}.${key}` : key, left[key], right[key], output)
+    }
+    return
+  }
+  output.push({ path: prefix, scope, left, right })
+}
+
+export function diffExperimentRecords(
+  left: ExperimentRecord,
+  right: ExperimentRecord,
+): ExperimentDifference[] {
+  const differences: ExperimentDifference[] = []
+  collectDifferences('identity', 'technique', left.technique, right.technique, differences)
+  collectDifferences('identity', 'modelKey', left.modelKey, right.modelKey, differences)
+  collectDifferences('request', 'request', left.request, right.request, differences)
+  collectDifferences('response', 'response', left.response, right.response, differences)
+  return differences
 }
 
 export function loadExperimentRecords(): ExperimentRecord[] {

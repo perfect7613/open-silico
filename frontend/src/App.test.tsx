@@ -105,6 +105,9 @@ describe('Mechanoscope model rack', () => {
       const url = request.toString()
       if (options?.method === 'POST') {
         return response({
+          experiment_id: 'lens-1',
+          technique_id: 'jacobian_lens',
+          result: {
           model_key: 'qwen3-1.7b',
           prompt: 'Test',
           tokens: [{ position: 0, token_id: 42, text: 'Test' }],
@@ -138,6 +141,7 @@ describe('Mechanoscope model rack', () => {
             vocab_size: 100,
             cache: 'modal_volume',
           },
+          },
         })
       }
       return url.endsWith('/health')
@@ -168,8 +172,11 @@ describe('Mechanoscope model rack', () => {
   it('runs a paired activation-steering experiment', async () => {
     const fetchMock = vi.fn((request: RequestInfo | URL, options?: RequestInit) => {
       const url = request.toString()
-      if (url.endsWith('/api/steer') && options?.method === 'POST') {
+      if (url.endsWith('/api/experiments/run') && options?.method === 'POST') {
         return response({
+          experiment_id: 'steer-1',
+          technique_id: 'activation_steering',
+          result: {
           model_key: 'qwen3-1.7b',
           prompt: 'Describe a companion.',
           baseline_message: 'A dog can be a loyal companion.',
@@ -190,6 +197,7 @@ describe('Mechanoscope model rack', () => {
             cache: 'modal_volume',
           },
           warnings: ['A causal intervention is not proof of monosemanticity.'],
+          },
         })
       }
       return url.endsWith('/health')
@@ -204,21 +212,24 @@ describe('Mechanoscope model rack', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Run A / B →' }))
 
     const steeringCall = fetchMock.mock.calls.find(([request]) =>
-      request.toString().endsWith('/api/steer'),
+      request.toString().endsWith('/api/experiments/run'),
     )
     const steeringRequest = JSON.parse(String(steeringCall?.[1]?.body))
     expect(steeringRequest).toMatchObject({
-      layer: 18,
-      strength: 1,
-      temperature: 0,
-      positive_examples: expect.arrayContaining([
-        'The animal is a cat',
-        'The feline kneads and purrs',
-      ]),
-      negative_examples: expect.arrayContaining([
-        'The animal is a dog',
-        'The canine fetches and barks',
-      ]),
+      technique_id: 'activation_steering',
+      input: {
+        layer: 18,
+        strength: 1,
+        temperature: 0,
+        positive_examples: expect.arrayContaining([
+          'The animal is a cat',
+          'The feline kneads and purrs',
+        ]),
+        negative_examples: expect.arrayContaining([
+          'The animal is a dog',
+          'The canine fetches and barks',
+        ]),
+      },
     })
 
     expect(await screen.findByText('A dog can be a loyal companion.')).toBeInTheDocument()

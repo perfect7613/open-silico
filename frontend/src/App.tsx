@@ -262,7 +262,7 @@ function App() {
           <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Look inside <span>J-Lens</span></button>
           <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Test influence <span>Steer</span></button>
           <button className={view === 'claim' ? 'is-active' : ''} type="button" onClick={() => setView('claim')}>Check a claim <span>Guard</span></button>
-          <button className={view === 'history' ? 'is-active' : ''} type="button" onClick={() => setView('history')}>Saved runs <span>Local</span></button>
+          <button className={view === 'history' ? 'is-active' : ''} type="button" onClick={() => setView('history')}>Saved runs <span>Records</span></button>
         </nav>
         <a className="issue-link" href="https://github.com/perfect7613/open-silico" target="_blank" rel="noreferrer">
           Open source ↗
