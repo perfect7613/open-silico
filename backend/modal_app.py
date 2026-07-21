@@ -103,6 +103,7 @@ mcp_image = (
 @app.function(
     image=api_image,
     volumes={DATA_PATH: experiment_store},
+    env={"MECHANOSCOPE_HF_ACCESS_CONFIGURED": str(bool(HF_SECRET_NAME)).lower()},
     max_containers=1,
 )
 @modal.concurrent(max_inputs=100)
@@ -137,7 +138,9 @@ def api():
     return create_app(
         Settings(
             environment="modal",
-            hf_access_configured=bool(HF_SECRET_NAME),
+            hf_access_configured=(
+                os.getenv("MECHANOSCOPE_HF_ACCESS_CONFIGURED", "false") == "true"
+            ),
             experiment_db_path=f"{DATA_PATH}/experiments.sqlite3",
             _env_file=None,
         ),
