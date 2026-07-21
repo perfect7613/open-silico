@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 from open_silico.api import create_app
 from open_silico.config import Settings
@@ -44,7 +46,7 @@ def test_catalog_falls_back_to_qwen_when_gemma_access_is_missing() -> None:
     }
     serialized = str(payload).lower()
     assert "hf_token" not in serialized
-    assert "daytona_api_key" not in serialized
+    assert "provider_api_key" not in serialized
 
 
 def test_catalog_prefers_gemma_after_server_access_is_configured() -> None:
@@ -69,3 +71,12 @@ def test_technique_catalog_is_available_without_loading_gpu() -> None:
     assert techniques["jacobian_lens"]["requires_artifact"] is True
     assert techniques["activation_steering"]["kind"] == "intervention"
     assert techniques["activation_steering"]["supports_sweeps"] is True
+
+
+def test_frontend_can_be_served_without_shadowing_api(tmp_path: Path) -> None:
+    (tmp_path / "index.html").write_text("<h1>Mechanoscope</h1>", encoding="utf-8")
+    settings = Settings(environment="test", _env_file=None)
+    client = TestClient(create_app(settings, static_dir=tmp_path))
+
+    assert client.get("/").text == "<h1>Mechanoscope</h1>"
+    assert client.get("/health").json()["service"] == "mechanoscope-api"

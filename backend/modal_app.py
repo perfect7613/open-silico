@@ -72,6 +72,7 @@ api_image = (
         "pydantic-settings>=2.10,<3",
     )
     .add_local_python_source("open_silico")
+    .add_local_dir("frontend/dist", remote_path="/assets")
 )
 
 
@@ -108,4 +109,5 @@ def api():
         Settings(environment="modal", hf_access_configured=True, _env_file=None),
         jlens_runner=DeployedRunner(),
         steering_runner=DeployedSteeringRunner(),
+        static_dir="/assets",
     )

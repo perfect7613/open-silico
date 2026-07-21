@@ -3,6 +3,7 @@ import './App.css'
 import { JacobianLensWorkbench } from './JacobianLensWorkbench'
 import { SteeringWorkbench } from './SteeringWorkbench'
 import { ExperimentHistory } from './experiments/ExperimentHistory'
+import { CausalTraceWorkbench } from './experiments/CausalTraceWorkbench'
 import {
   fetchHealth,
   fetchModelCatalog,
@@ -201,7 +202,7 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'history'>('models')
+  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'causal' | 'history'>('models')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -251,10 +252,11 @@ function App() {
           <button className={view === 'models' ? 'is-active' : ''} type="button" onClick={() => setView('models')}>Models</button>
           <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Jacobian Lens <span>02</span></button>
           <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Steering <span>05</span></button>
+          <button className={view === 'causal' ? 'is-active' : ''} type="button" onClick={() => setView('causal')}>Causal Trace <span>NEW</span></button>
           <button className={view === 'history' ? 'is-active' : ''} type="button" onClick={() => setView('history')}>Experiments <span>25</span></button>
         </nav>
-        <a className="issue-link" href={`https://github.com/perfect7613/open-silico/issues/${view === 'jlens' ? 5 : view === 'steering' ? 6 : 2}`} target="_blank" rel="noreferrer">
-          Slice {view === 'jlens' ? '04' : view === 'steering' ? '05' : '01'} ↗
+        <a className="issue-link" href="https://github.com/perfect7613/open-silico" target="_blank" rel="noreferrer">
+          Open source ↗
         </a>
       </header>
 
@@ -317,6 +319,9 @@ function App() {
           )}
           {!loading && !error && selectedModel && view === 'steering' && (
             <SteeringWorkbench model={selectedModel} />
+          )}
+          {!loading && !error && view === 'causal' && (
+            <CausalTraceWorkbench onRunLens={openLens} onRunSteering={openSteering} />
           )}
           {!loading && !error && view === 'history' && <ExperimentHistory />}
         </main>

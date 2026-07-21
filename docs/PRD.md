@@ -12,6 +12,8 @@ The activation-steering workbench will use a Neuronpedia-inspired layout: a mode
 
 The Jacobian Lens workbench will use Anthropic's pinned Apache-2.0 reference implementation and compatible pre-fitted Neuronpedia lenses. It will expose the linked Figure 5 experience: prompt transcript, layer-by-position argmax table, token pinning, rank heatmap, by-layer readout, by-position readout, and linked rank trajectories. Model and lens artifacts will be cached in Modal Volumes and never downloaded to the local workstation.
 
+The product-level differentiator is a technique-agnostic causal debugging protocol. Its first surface, Causal Trace, pairs a successful Jacobian Lens observation and activation-steering intervention from the same model into one limitation-aware, replayable evidence receipt. This is the beginning of an open experiment graph rather than a third isolated technique demo.
+
 Each experiment will report the exact model, model revision, lens revision, technique configuration, sampling parameters, seed, timing, and warnings. The architecture will make models and techniques pluggable without presenting the user with capabilities that are not actually installed.
 
 ## User Stories
@@ -262,8 +264,4 @@ Exit criteria: every ready model has machine-verifiable evidence that its advert
 Mechanoscope separates scientific execution from development isolation:
 
 - **Modal GPU lane:** runs version-pinned model subjects and technique engines. Modal is an adapter around the remote runtime, not the owner of scientific behavior.
-- **Daytona validation lane:** Crabbox creates clean, disposable Linux sandboxes for backend, frontend, generated-contract, and full verification jobs. These jobs never receive model weights or production secrets by default.
-- **Desktop inspection lane:** WebVNC runs through a Crabbox provider that advertises desktop capability. The Daytona adapter currently provides SSH and synchronization only, so local Docker is the preferred desktop provider; AWS or Hetzner are optional paid alternatives.
 - **Local orchestration lane:** the developer machine owns configuration and dispatch, while credentials remain in environment variables or provider secret stores rather than repository files.
-
-The initial sandbox setup is complete when all four Crabbox jobs can hydrate from a clean checkout, generated contracts fail on drift, idle sandboxes stop automatically, and no provider credential appears in a sync plan or Git diff.

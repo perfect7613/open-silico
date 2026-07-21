@@ -1086,6 +1086,113 @@
   .history-actions { flex-wrap: wrap; }
 }
 
+/* Causal Trace turns separate instruments into one auditable scientific claim. */
+.causal-workbench {
+  min-height: calc(100vh - 100px);
+  padding: clamp(24px, 4vw, 58px);
+  background:
+    linear-gradient(rgba(25, 47, 55, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(25, 47, 55, .045) 1px, transparent 1px),
+    #f3f0e8;
+  background-size: 32px 32px;
+  color: #142832;
+}
+
+.causal-masthead {
+  display: grid;
+  grid-template-columns: minmax(300px, .9fr) minmax(340px, 1fr) auto;
+  gap: 32px;
+  align-items: end;
+  padding-bottom: 22px;
+  border-bottom: 4px solid #142832;
+}
+
+.causal-masthead h2 { margin: 5px 0 0; font: 820 clamp(42px, 7vw, 82px)/.78 var(--display); letter-spacing: -.075em; }
+.causal-masthead > p { max-width: 640px; margin: 0; color: #52646b; font: 500 12px/1.6 var(--mono); }
+.causal-masthead > span { padding: 8px 10px; background: #142832; color: var(--acid); font: 720 8px/1 var(--mono); letter-spacing: .1em; }
+
+.causal-builder {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.25fr) minmax(230px, 1fr) minmax(230px, 1fr) auto;
+  border: 1px solid #142832;
+  background: #fffef9;
+  box-shadow: 7px 7px 0 rgba(20, 40, 50, .12);
+}
+
+.causal-builder > label { min-width: 0; padding: 12px; display: grid; gap: 9px; align-content: start; border-right: 1px solid #aeb7b5; }
+.causal-builder label > span,
+.causal-hypothesis small,
+.causal-branches small { color: #65757a; font: 720 8px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.causal-builder textarea,
+.causal-builder select { width: 100%; min-height: 54px; padding: 10px; border: 1px solid #aeb7b5; border-radius: 0; outline: none; background: #faf9f3; color: #142832; font: 550 10px/1.45 var(--mono); }
+.causal-builder textarea { min-height: 72px; resize: vertical; }
+.causal-builder textarea:focus,
+.causal-builder select:focus { border-color: var(--cyan-dark); box-shadow: inset 0 -3px 0 var(--cyan); }
+.causal-builder label button { justify-self: start; padding: 0; border: 0; background: transparent; color: #0d7788; font: 700 9px var(--mono); cursor: pointer; }
+.causal-generate { min-width: 160px; border: 0; background: var(--acid); color: #142832; font: 800 10px/1.4 var(--mono); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+.causal-generate:hover { background: #bcff2f; }
+.causal-generate:active { transform: scale(.98); }
+.causal-error { margin: 18px 0 0; padding: 11px 14px; border: 1px solid #a33d2b; background: #fff0eb; color: #8d2f20; font: 650 10px/1.4 var(--mono); }
+
+.causal-empty { min-height: 390px; display: grid; place-content: center; justify-items: center; gap: 15px; text-align: center; }
+.causal-empty strong { color: #b0aba0; font: 320 clamp(30px, 5vw, 68px)/1 var(--display); letter-spacing: -.055em; }
+.causal-empty p { max-width: 660px; margin: 0; color: #5e6c71; font: 500 11px/1.7 var(--mono); }
+.causal-empty button { min-height: 38px; padding: 0 14px; border: 1px solid #142832; background: #142832; color: var(--acid); font: 750 9px var(--mono); text-transform: uppercase; cursor: pointer; }
+.causal-empty button:hover { transform: translateY(-2px); box-shadow: 4px 4px 0 rgba(20, 40, 50, .18); }
+
+.causal-receipt { margin-top: 30px; border: 1px solid #142832; background: #07161c; color: #e7f5f5; box-shadow: 10px 10px 0 rgba(20, 40, 50, .15); }
+.causal-receipt > header { min-height: 86px; padding: 16px 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; border-bottom: 1px solid #29424a; }
+.causal-receipt header small { color: #6f8c95; font: 700 8px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.causal-receipt h3 { margin: 7px 0 0; color: var(--acid); font: 780 clamp(23px, 3vw, 40px)/.9 var(--display); letter-spacing: -.04em; }
+.causal-receipt header > span { color: #6f8c95; font: 650 9px var(--mono); }
+.causal-hypothesis { padding: 20px; border-bottom: 1px solid #29424a; }
+.causal-hypothesis p { max-width: 900px; margin: 9px 0 0; font: 580 17px/1.4 var(--mono); }
+.causal-receipt ol { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; }
+.causal-receipt li { min-height: 172px; padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-content: start; border-right: 1px solid #29424a; }
+.causal-receipt li:last-child { border-right: 0; }
+.causal-receipt li > i { color: #58717a; font: 650 9px var(--mono); }
+.causal-receipt li strong { color: #e8f4f5; font: 700 11px/1.3 var(--mono); }
+.causal-receipt li p { margin: 8px 0 0; color: #80969d; font: 500 9px/1.55 var(--mono); }
+.causal-receipt li > b { grid-column: 2; justify-self: start; padding: 4px 6px; border: 1px solid #526a71; color: #8299a0; font: 700 7px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.causal-receipt li.is-passed > b,
+.causal-receipt li.is-observed > b { border-color: #7ca726; color: var(--acid); }
+.causal-branches { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #29424a; border-bottom: 1px solid #29424a; }
+.causal-branches > div { min-height: 125px; padding: 18px 20px; }
+.causal-branches > div:first-child { border-right: 1px solid #29424a; }
+.causal-branches p { margin: 10px 0 0; color: #dce9ea; font: 500 11px/1.6 var(--mono); }
+.causal-receipt > footer { padding: 17px 20px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.causal-receipt footer > p { max-width: 760px; margin: 0; color: #93a7ac; font: 500 9px/1.55 var(--mono); }
+.causal-receipt footer > div { display: flex; gap: 7px; }
+.causal-receipt footer button { min-height: 34px; padding: 0 11px; border: 1px solid #58717a; background: #10242b; color: #d9e8e9; font: 700 8px var(--mono); text-transform: uppercase; cursor: pointer; }
+.causal-receipt footer button:last-child { border-color: var(--acid); color: var(--acid); }
+.causal-receipt footer button:hover { background: #19323b; }
+
+@media (max-width: 1050px) {
+  .causal-masthead { grid-template-columns: 1fr 1fr; }
+  .causal-masthead > span { grid-column: 1 / -1; justify-self: start; }
+  .causal-builder { grid-template-columns: 1fr 1fr; }
+  .causal-builder > label { border-bottom: 1px solid #aeb7b5; }
+  .causal-generate { min-height: 60px; grid-column: 1 / -1; }
+  .causal-receipt ol { grid-template-columns: 1fr 1fr; }
+  .causal-receipt li:nth-child(2) { border-right: 0; }
+  .causal-receipt li:nth-child(-n+2) { border-bottom: 1px solid #29424a; }
+}
+
+@media (max-width: 680px) {
+  .causal-workbench { padding: 22px 14px; }
+  .causal-masthead { grid-template-columns: 1fr; gap: 16px; }
+  .causal-masthead > span { grid-column: auto; }
+  .causal-builder { grid-template-columns: 1fr; }
+  .causal-builder > label { border-right: 0; }
+  .causal-receipt > header,
+  .causal-receipt > footer { align-items: flex-start; flex-direction: column; }
+  .causal-receipt ol,
+  .causal-branches { grid-template-columns: 1fr; }
+  .causal-receipt li { border-right: 0; border-bottom: 1px solid #29424a; }
+  .causal-branches > div:first-child { border-right: 0; border-bottom: 1px solid #29424a; }
+}
+
 /* Linked Jacobian Lens console — intentionally dense, like a scientific plate. */
 .workspace.is-instrument { grid-template-columns: minmax(0, 1fr); }
 .workspace.is-instrument .model-rail { display: none; }

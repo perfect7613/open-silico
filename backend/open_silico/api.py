@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from open_silico import __version__
 from open_silico.config import Settings, get_settings
@@ -26,6 +29,7 @@ def create_app(
     *,
     jlens_runner: JacobianLensRunner | None = None,
     steering_runner: ActivationSteeringRunner | None = None,
+    static_dir: str | Path | None = None,
 ) -> FastAPI:
     active_settings = settings or get_settings()
     app = FastAPI(
@@ -121,6 +125,13 @@ def create_app(
                     retryable=error.retryable,
                 ).model_dump(),
             ) from error
+
+    if static_dir is not None:
+        frontend_dir = Path(static_dir)
+        if not frontend_dir.is_dir():
+            raise RuntimeError(f"Frontend asset directory does not exist: {frontend_dir}")
+        # Registered last so API, health, and OpenAPI routes stay authoritative.
+        app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
     return app
 

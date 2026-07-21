@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -224,5 +224,23 @@ describe('Mechanoscope model rack', () => {
     expect(screen.getByText('A cat can be a calm, independent companion.')).toBeInTheDocument()
     expect(screen.getByText('12.500')).toBeInTheDocument()
     expect(screen.getByText('REMOVED')).toBeInTheDocument()
+  })
+
+  it('shows the verified causal-trace golden path without waking a GPU', async () => {
+    vi.stubGlobal('fetch', vi.fn((request: RequestInfo | URL) =>
+      request.toString().endsWith('/health')
+        ? response({ status: 'ok', version: '0.1.0', environment: 'test' })
+        : response(catalog),
+    ))
+
+    const rendered = render(<App />)
+    await within(rendered.container).findByRole('heading', { name: 'Qwen3 1.7B' })
+    await userEvent.click(within(rendered.container).getByRole('button', { name: /Causal Trace/ }))
+    await userEvent.click(within(rendered.container).getByRole('button', { name: 'View verified Qwen example →' }))
+
+    expect(within(rendered.container).getByText('CAUSAL INFLUENCE OBSERVED')).toBeInTheDocument()
+    expect(within(rendered.container).getByText(/Verified remote example/)).toBeInTheDocument()
+    expect(within(rendered.container).getByRole('button', { name: 'Share X-Ray card' })).toBeEnabled()
+    expect(within(rendered.container).getByText('Mechanism established')).toBeInTheDocument()
   })
 })

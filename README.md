@@ -13,6 +13,23 @@ It combines a browser-based research interface, a typed FastAPI gateway, pluggab
 | Contrastive activation steering | Yes | Yes |
 | Remote Modal execution | Yes | Yes |
 | Browser-local experiment history and JSON export | Yes | Yes |
+| Cross-technique Causal Trace and X-Ray card | Yes | Yes |
+
+## Why Mechanoscope
+
+Interpretability platforms usually make one of two things excellent: a large atlas of internal features or an environment for expert model-development teams. Mechanoscope is building the missing open workflow between the instruments: a falsifiable, reproducible causal debugging loop.
+
+| Platform | Publicly documented strength | Mechanoscope's distinct focus |
+| --- | --- | --- |
+| [Neuronpedia](https://www.neuronpedia.org/) | The open interpretability library: large hosted datasets, feature search, SAEs, steering, circuits, Jacobian Lens, NLA, APIs, and community releases | Join observations and interventions into one replayable evidence chain instead of treating each technique result as the endpoint |
+| [Goodfire Silico](https://www.goodfire.ai/silico) | A private, early-access model-design environment with agent-planned experiments, diagnostics, intervention, and frontier-scale infrastructure | Make the experiment protocol open, inspectable, self-hostable, and explicit about the boundary between influence and mechanism |
+| **Mechanoscope** | An open model observatory with remote execution and typed technique adapters | Hypothesis → observation → matched intervention → limitation-aware causal receipt → replay/share |
+
+### The first moat: Causal Trace
+
+Causal Trace pairs a Jacobian Lens observation with an activation-steering intervention on the same pinned model. It produces an evidence ladder, preserves both experiment IDs, identifies whether the matched outputs diverged, and keeps “mechanism established” unresolved until stronger controls exist. The result exports as JSON for reproduction and as a shareable SVG X-Ray card.
+
+This is intentionally stronger than another attractive dashboard: each new interpretability technique can become an Observation, Intervention, or Evaluation adapter in the same protocol. The durable goal is an open corpus of forkable causal traces and evaluation recipes.
 
 ### Linked Jacobian Lens
 
@@ -119,6 +136,8 @@ MECHANOSCOPE_HF_SECRET_NAME=huggingface-secret \
   uv run modal deploy backend/modal_app.py
 ```
 
+The current public demo is [ameymuke252003--mechanoscope-api.modal.run](https://ameymuke252003--mechanoscope-api.modal.run). The web application scales to zero; a GPU worker wakes only when an experiment is submitted.
+
 To use the deployed API from the local Vite application, configure `frontend/.env`:
 
 ```dotenv
@@ -163,43 +182,14 @@ MECHANOSCOPE_RUN_MODAL_SMOKE=1 \
 
 Remote tests consume GPU resources and are skipped by default.
 
-## Isolated development with Crabbox and Daytona
-
-The checked-in `.crabbox.yaml` defines four disposable verification jobs: `backend`, `frontend`, `contracts`, and `full`. Daytona hosts clean Linux sandboxes; Modal remains the GPU execution provider.
-
-With a logged-in Daytona CLI, use the repository helper. It refreshes the active CLI profile and passes its short-lived credential only to the Crabbox subprocess:
-
-```bash
-scripts/crabbox-daytona doctor --provider daytona
-scripts/crabbox-daytona job run backend
-```
-
-For non-interactive CI, set `DAYTONA_API_KEY` instead and run Crabbox directly.
-
-Run `scripts/crabbox-daytona job run frontend` in another terminal for an independent frontend sandbox, or `scripts/crabbox-daytona job run full` for the complete gate. Leases auto-stop after the job and have a 20-minute idle timeout plus a 90-minute TTL.
-
-Crabbox's Daytona adapter currently exposes terminal and file synchronization, but not a desktop session. WebVNC inspection therefore uses a separate desktop-capable provider. The no-cloud-cost option is Docker Desktop with Crabbox's `local-container` provider:
-
-```bash
-crabbox warmup --provider local-container --desktop --browser --code
-crabbox list
-crabbox webvnc --id <lease-id> --open
-```
-
-Docker is not currently installed on this machine, so this lane is configured but cannot be started yet. Hetzner or AWS can also supply a desktop lease, but would require their provider credentials and incur compute cost.
-
 ### Credentials
 
 | Credential | Required for | Status |
 | --- | --- | --- |
-| Daytona CLI login or `DAYTONA_API_KEY` | Daytona sandbox create, inspect, and delete | CLI login is configured locally; API key is intended for CI |
-| `DAYTONA_ORGANIZATION_ID` | Explicit Daytona organization selection | Optional; only for multi-organization accounts |
 | Modal CLI authentication | Real model execution | Already configured locally |
 | Modal Secret containing `HF_TOKEN` | Gated Gemma checkpoint | Configure the secret named by `MECHANOSCOPE_HF_SECRET_NAME` |
-| `FIRECRAWL_API_KEY` | Optional automated documentation/research jobs | Optional; the local CLI is not authenticated yet |
-| Docker Desktop | Local WebVNC desktop inspection | Required for the recommended no-cloud-cost WebVNC lane |
 
-Never commit these values. Daytona credentials need sandbox write/delete permissions; secrets should be injected through provider secret stores or the local shell.
+Never commit these values. Secrets should be injected through provider secret stores or the local shell.
 
 ## Security and data handling
 
