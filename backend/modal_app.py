@@ -1,4 +1,5 @@
 import os
+import subprocess
 from typing import Any
 
 import modal
@@ -13,10 +14,16 @@ from open_silico.techniques.jacobian_lens import JLENS_REVISION, JacobianLensEng
 
 APP_NAME = "mechanoscope"
 CACHE_PATH = "/cache"
+DATA_PATH = "/data"
 HF_SECRET_NAME = os.getenv("MECHANOSCOPE_HF_SECRET_NAME", "huggingface-secret")
+DEPLOYED_API_URL = os.getenv(
+    "MECHANOSCOPE_DEPLOYED_API_URL",
+    "https://ameymuke252003--mechanoscope-api.modal.run",
+)
 
 app = modal.App(APP_NAME)
 artifact_cache = modal.Volume.from_name("open-silico-artifacts", create_if_missing=True)
+experiment_store = modal.Volume.from_name("mechanoscope-experiments", create_if_missing=True)
 
 gpu_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -75,13 +82,34 @@ api_image = (
     .add_local_dir("frontend/dist", remote_path="/assets")
 )
 
+mcp_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .apt_install("nodejs", "npm")
+    .uv_pip_install("pydantic>=2.11,<3")
+    .add_local_python_source("open_silico", copy=True)
+    .add_local_dir(
+        "mcp-server",
+        remote_path="/mcp",
+        copy=True,
+        ignore=["node_modules", "dist"],
+    )
+    .run_commands(
+        "cd /mcp && npm ci && npm run build && npm prune --omit=dev",
+    )
+)
 
-@app.function(image=api_image)
+
+@app.function(
+    image=api_image,
+    volumes={DATA_PATH: experiment_store},
+    max_containers=1,
+)
 @modal.concurrent(max_inputs=100)
 @modal.asgi_app()
 def api():
     from open_silico.api import create_app
     from open_silico.config import Settings
+    from open_silico.experiment_repository import SqliteExperimentRepository
     from open_silico.jlens_service import JacobianLensRunner, classify_modal_error
     from open_silico.steering_service import ActivationSteeringRunner
 
@@ -106,8 +134,33 @@ def api():
                 raise classify_modal_error(error) from error
 
     return create_app(
-        Settings(environment="modal", hf_access_configured=True, _env_file=None),
+        Settings(
+            environment="modal",
+            hf_access_configured=True,
+            experiment_db_path=f"{DATA_PATH}/experiments.sqlite3",
+            _env_file=None,
+        ),
         jlens_runner=DeployedRunner(),
         steering_runner=DeployedSteeringRunner(),
+        experiment_repository=SqliteExperimentRepository(
+            f"{DATA_PATH}/experiments.sqlite3",
+            on_write=experiment_store.commit,
+        ),
         static_dir="/assets",
     )
+
+
+@app.function(
+    image=mcp_image,
+    env={
+        "MECHANOSCOPE_API_URL": DEPLOYED_API_URL,
+        "MECHANOSCOPE_APP_URL": DEPLOYED_API_URL,
+        "PORT": "8787",
+    },
+    max_containers=1,
+    scaledown_window=300,
+)
+@modal.web_server(port=8787, startup_timeout=30)
+def mcp():
+    """Public Apps SDK Adapter; scientific execution stays behind the API Seam."""
+    subprocess.Popen(["node", "/mcp/dist/server.js"])

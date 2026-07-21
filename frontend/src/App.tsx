@@ -91,10 +91,12 @@ function GettingStarted({
   onLookInside,
   onSteer,
   onCheck,
+  onOpenDemo,
 }: {
   onLookInside: () => void
   onSteer: () => void
   onCheck: () => void
+  onOpenDemo: () => void
 }) {
   return (
     <section className="getting-started" aria-labelledby="getting-started-title">
@@ -112,6 +114,10 @@ function GettingStarted({
         <button type="button" onClick={onCheck}>
           <i>3</i><span><strong>Am I claiming too much?</strong><small>Check whether two saved runs are actually comparable.</small></span><b>Check a claim →</b>
         </button>
+      </div>
+      <div className="demo-ribbon">
+        <span><i>LIVE</i><strong>Short on time?</strong> Open real, replayable GPU receipts—including a steering miss the evidence does not hide.</span>
+        <button type="button" onClick={onOpenDemo}>Open the judge demo →</button>
       </div>
     </section>
   )
@@ -206,12 +212,15 @@ function ModelInstrument({
 }
 
 function App() {
+  const linkedExperimentId = new URLSearchParams(window.location.search).get('experiment')
   const [catalog, setCatalog] = useState<ModelCatalog | null>(null)
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'claim' | 'history'>('models')
+  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'claim' | 'history'>(
+    linkedExperimentId ? 'history' : 'models',
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -312,7 +321,12 @@ function App() {
           )}
 
           {!loading && !error && view === 'models' && (
-            <GettingStarted onLookInside={openLens} onSteer={openSteering} onCheck={() => setView('claim')} />
+            <GettingStarted
+              onLookInside={openLens}
+              onSteer={openSteering}
+              onCheck={() => setView('claim')}
+              onOpenDemo={() => setView('history')}
+            />
           )}
 
           {loading && <LoadingShell />}
@@ -336,7 +350,12 @@ function App() {
           {!loading && !error && view === 'claim' && (
             <ClaimCheckWorkbench onRunLens={openLens} onRunSteering={openSteering} />
           )}
-          {!loading && !error && view === 'history' && <ExperimentHistory />}
+          {!loading && !error && view === 'history' && (
+            <ExperimentHistory
+              allowServerDeletion={health?.environment !== 'modal'}
+              focusExperimentId={linkedExperimentId}
+            />
+          )}
         </main>
       </div>
 

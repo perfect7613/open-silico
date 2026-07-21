@@ -1,4 +1,5 @@
 import sqlite3
+from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
 
@@ -39,8 +40,14 @@ class InMemoryExperimentRepository:
 class SqliteExperimentRepository:
     """Small durable record store; scientific execution remains outside this adapter."""
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        on_write: Callable[[], None] | None = None,
+    ) -> None:
         self.path = Path(path)
+        self.on_write = on_write
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
@@ -74,6 +81,8 @@ class SqliteExperimentRepository:
                     experiment.model_dump_json(),
                 ),
             )
+        if self.on_write is not None:
+            self.on_write()
 
     def get(self, experiment_id: str) -> ExperimentEnvelope | None:
         with self._connect() as connection:
@@ -97,4 +106,7 @@ class SqliteExperimentRepository:
                 "DELETE FROM experiments WHERE experiment_id = ?",
                 (experiment_id,),
             )
-        return cursor.rowcount > 0
+        deleted = cursor.rowcount > 0
+        if deleted and self.on_write is not None:
+            self.on_write()
+        return deleted

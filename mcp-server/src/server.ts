@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { planExperiment, requireApproval } from './protocol.js'
 
 const API_URL = (process.env.MECHANOSCOPE_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
+const APP_URL = (process.env.MECHANOSCOPE_APP_URL ?? API_URL).replace(/\/$/, '')
 const PORT = Number(process.env.PORT ?? 8787)
 const MCP_PATH = '/mcp'
 const RESULT_WIDGET_URI = 'ui://mechanoscope/experiment-result.html'
@@ -42,7 +43,8 @@ const resultWidget = `
   .badge { padding:5px 8px; border-radius:999px; background:#d9f99d; color:#274112; font-size:10px; font-weight:700; }
   .pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; } article { padding:12px; border-radius:10px; background:color-mix(in srgb, currentColor 6%, transparent); }
   article b { display:block; margin-bottom:7px; font-size:10px; opacity:.65; } article p { margin:0; font:14px/1.45 system-ui; }
-  footer { margin-top:12px; padding-top:10px; border-top:1px solid color-mix(in srgb, currentColor 15%, transparent); font-size:10px; opacity:.7; }
+  footer { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; padding-top:10px; border-top:1px solid color-mix(in srgb, currentColor 15%, transparent); font-size:10px; opacity:.75; }
+  a { color:inherit; font-weight:700; text-underline-offset:3px; }
 </style>
 <script>
   const root = document.getElementById('app');
@@ -55,7 +57,8 @@ const resultWidget = `
     const summary = steering
       ? '<div class="pair"><article><b>CONTROL</b><p>' + escapeHtml(result.baseline_message || 'No text') + '</p></article><article><b>INTERVENTION</b><p>' + escapeHtml(result.steered_message || 'No text') + '</p></article></div>'
       : '<article><b>JACOBIAN SLICE</b><p>' + Number(result.rows?.length ?? 0) + ' layers × ' + Number(result.tokens?.length ?? 0) + ' positions. Open the full Mechanoscope workbench for linked 2D/3D inspection.</p></article>';
-    root.innerHTML = '<header><div><small>MECHANOSCOPE / EXPERIMENT RECEIPT</small><h2>' + escapeHtml(technique.replaceAll('_', ' ')) + '</h2></div><span class="badge">COMPLETE</span></header>' + summary + '<footer>Model ' + escapeHtml(result.model_key) + ' · Record ' + escapeHtml(envelope?.experiment_id ?? 'direct result') + ' · Interpret within the attached evidence boundary.</footer>';
+    const workbenchUrl = output?.workbenchUrl ?? '';
+    root.innerHTML = '<header><div><small>MECHANOSCOPE / EXPERIMENT RECEIPT</small><h2>' + escapeHtml(technique.replaceAll('_', ' ')) + '</h2></div><span class="badge">COMPLETE</span></header>' + summary + '<footer><span>Model ' + escapeHtml(result.model_key) + ' · Record ' + escapeHtml(envelope?.experiment_id ?? 'direct result') + ' · Interpret within the attached evidence boundary.</span>' + (workbenchUrl ? '<a href="' + escapeHtml(workbenchUrl) + '" target="_blank">Open full workbench ↗</a>' : '') + '</footer>';
   }
   render(window.openai?.toolOutput);
   window.addEventListener('openai:set_globals', (event) => render(event.detail?.globals?.toolOutput ?? window.openai?.toolOutput), { passive: true });
@@ -125,12 +128,12 @@ function createMechanoscopeServer() {
     title: 'Get an experiment receipt',
     description: 'Fetch one saved experiment with exact request, result, revisions, timing, and lineage.',
     inputSchema: { experimentId: z.string().min(1) },
-    outputSchema: { experiment: jsonObjectSchema },
+    outputSchema: { experiment: jsonObjectSchema, workbenchUrl: z.string().url() },
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     _meta: { ui: { resourceUri: RESULT_WIDGET_URI }, 'openai/outputTemplate': RESULT_WIDGET_URI },
   }, async ({ experimentId }) => {
     const experiment = await apiRequest(`/api/experiments/${encodeURIComponent(experimentId)}`)
-    return { structuredContent: { experiment }, content: [{ type: 'text', text: `Loaded experiment ${experimentId}.` }] }
+    return { structuredContent: { experiment, workbenchUrl: `${APP_URL}/?experiment=${experimentId}` }, content: [{ type: 'text', text: `Loaded experiment ${experimentId}.` }] }
   })
 
   server.registerTool('run_experiment', {
@@ -141,7 +144,7 @@ function createMechanoscopeServer() {
       technique: techniqueSchema,
       request: jsonObjectSchema.describe('Technique request matching the Mechanoscope API contract.'),
     },
-    outputSchema: { experiment: jsonObjectSchema },
+    outputSchema: { experiment: jsonObjectSchema, workbenchUrl: z.string().url() },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     _meta: {
       ui: { resourceUri: RESULT_WIDGET_URI },
@@ -156,7 +159,7 @@ function createMechanoscopeServer() {
       body: JSON.stringify({ technique_id: technique, input: request }),
     })
     return {
-      structuredContent: { experiment },
+      structuredContent: { experiment, workbenchUrl: `${APP_URL}/?experiment=${String(experiment.experiment_id)}` },
       content: [{ type: 'text', text: `Experiment ${String(experiment.experiment_id)} completed. Preserve the model, artifact, prompt, and parameter provenance when interpreting it.` }],
     }
   })
@@ -168,7 +171,7 @@ function createMechanoscopeServer() {
       approved: z.boolean().describe('Must be true only after the user explicitly approves remote GPU execution.'),
       experimentId: z.string().min(1),
     },
-    outputSchema: { experiment: jsonObjectSchema },
+    outputSchema: { experiment: jsonObjectSchema, workbenchUrl: z.string().url() },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     _meta: {
       ui: { resourceUri: RESULT_WIDGET_URI },
@@ -179,7 +182,7 @@ function createMechanoscopeServer() {
   }, async ({ approved, experimentId }) => {
     requireApproval(approved)
     const experiment = await apiRequest(`/api/experiments/${encodeURIComponent(experimentId)}/replay`, { method: 'POST' })
-    return { structuredContent: { experiment }, content: [{ type: 'text', text: `Replayed ${experimentId} as ${String(experiment.experiment_id)}.` }] }
+    return { structuredContent: { experiment, workbenchUrl: `${APP_URL}/?experiment=${String(experiment.experiment_id)}` }, content: [{ type: 'text', text: `Replayed ${experimentId} as ${String(experiment.experiment_id)}.` }] }
   })
 
   server.registerTool('fork_experiment', {
@@ -190,7 +193,7 @@ function createMechanoscopeServer() {
       experimentId: z.string().min(1),
       request: jsonObjectSchema.describe('Full experiment request with technique_id and input. The technique must match the parent.'),
     },
-    outputSchema: { experiment: jsonObjectSchema },
+    outputSchema: { experiment: jsonObjectSchema, workbenchUrl: z.string().url() },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     _meta: {
       ui: { resourceUri: RESULT_WIDGET_URI },
@@ -204,7 +207,7 @@ function createMechanoscopeServer() {
       method: 'POST',
       body: JSON.stringify({ request }),
     })
-    return { structuredContent: { experiment }, content: [{ type: 'text', text: `Forked ${experimentId} as ${String(experiment.experiment_id)}.` }] }
+    return { structuredContent: { experiment, workbenchUrl: `${APP_URL}/?experiment=${String(experiment.experiment_id)}` }, content: [{ type: 'text', text: `Forked ${experimentId} as ${String(experiment.experiment_id)}.` }] }
   })
 
   return server

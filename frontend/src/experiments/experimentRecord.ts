@@ -1,4 +1,4 @@
-import type { TechniqueSummary } from '../api'
+import type { ExperimentEnvelope, TechniqueSummary } from '../api'
 
 export type ExperimentStatus = 'succeeded' | 'failed'
 
@@ -41,6 +41,23 @@ export type ExperimentDifference = {
   scope: 'identity' | 'request' | 'response'
   left: unknown
   right: unknown
+}
+
+export function experimentRecordFromEnvelope(envelope: ExperimentEnvelope): ExperimentRecord {
+  return {
+    id: envelope.experiment_id,
+    technique: envelope.technique_id as ExperimentRecord['technique'],
+    modelKey: envelope.result.model_key,
+    startedAt: envelope.started_at,
+    completedAt: envelope.finished_at,
+    status: 'succeeded',
+    request: envelope.request.input,
+    response: envelope.result,
+    serverExperimentId: envelope.experiment_id,
+    lineage: envelope.parent_experiment_id && envelope.lineage_operation
+      ? { parentId: envelope.parent_experiment_id, operation: envelope.lineage_operation }
+      : undefined,
+  }
 }
 
 const STORAGE_KEY = 'mechanoscope.experiments.v1'

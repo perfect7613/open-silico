@@ -1,6 +1,7 @@
 from pathlib import Path
+from secrets import compare_digest
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -69,7 +70,7 @@ def create_app(
         allow_origins=active_settings.cors_origin_list,
         allow_credentials=False,
         allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", "Authorization"],
     )
 
     @app.get("/health", response_model=HealthResponse, tags=["system"])
@@ -128,7 +129,22 @@ def create_app(
         status_code=204,
         tags=["experiments"],
     )
-    def delete_experiment(experiment_id: str) -> None:
+    def delete_experiment(
+        experiment_id: str,
+        authorization: str | None = Header(default=None),
+    ) -> None:
+        configured_token = (
+            active_settings.admin_token.get_secret_value()
+            if active_settings.admin_token is not None
+            else None
+        )
+        if configured_token is None:
+            if active_settings.environment not in {"development", "test"}:
+                raise HTTPException(status_code=503, detail="Receipt deletion is disabled")
+        else:
+            scheme, _, candidate = (authorization or "").partition(" ")
+            if scheme.lower() != "bearer" or not compare_digest(candidate, configured_token):
+                raise HTTPException(status_code=401, detail="Owner authorization required")
         if not repository.delete(experiment_id):
             raise HTTPException(status_code=404, detail="Experiment not found")
 

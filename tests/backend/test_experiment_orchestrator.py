@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from open_silico.api import create_app
 from open_silico.config import Settings
+from open_silico.experiment_repository import InMemoryExperimentRepository
 from open_silico.jlens_contracts import JacobianLensRequest, JacobianLensResponse
 from open_silico.steering_contracts import (
     ActivationSteeringRequest,
@@ -183,3 +184,50 @@ def test_saved_experiment_can_be_deleted_explicitly() -> None:
 
     assert response.status_code == 204
     assert active_client.get(f"/api/experiments/{experiment['experiment_id']}").status_code == 404
+
+
+def test_deletion_is_disabled_in_production_without_owner_token() -> None:
+    active_client = TestClient(
+        create_app(
+            Settings(environment="modal", _env_file=None),
+            jlens_runner=JLFixtureRunner(),
+            steering_runner=SteeringFixtureRunner(),
+            experiment_repository=InMemoryExperimentRepository(),
+        )
+    )
+    experiment = active_client.post(
+        "/api/experiments/run",
+        json={
+            "technique_id": "jacobian_lens",
+            "input": {"prompt": "Protected receipt."},
+        },
+    ).json()
+
+    response = active_client.delete(f"/api/experiments/{experiment['experiment_id']}")
+
+    assert response.status_code == 503
+
+
+def test_production_deletion_requires_matching_owner_token() -> None:
+    active_client = TestClient(
+        create_app(
+            Settings(environment="modal", admin_token="owner-secret", _env_file=None),
+            jlens_runner=JLFixtureRunner(),
+            steering_runner=SteeringFixtureRunner(),
+            experiment_repository=InMemoryExperimentRepository(),
+        )
+    )
+    experiment = active_client.post(
+        "/api/experiments/run",
+        json={
+            "technique_id": "jacobian_lens",
+            "input": {"prompt": "Protected receipt."},
+        },
+    ).json()
+    path = f"/api/experiments/{experiment['experiment_id']}"
+
+    assert active_client.delete(path).status_code == 401
+    assert active_client.delete(
+        path,
+        headers={"Authorization": "Bearer owner-secret"},
+    ).status_code == 204

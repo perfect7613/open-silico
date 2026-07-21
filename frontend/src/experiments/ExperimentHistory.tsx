@@ -9,7 +9,6 @@ import {
   runJacobianLens,
   type ActivationSteeringRequest,
   type JacobianLensRequest,
-  type ExperimentEnvelope,
 } from '../api'
 
 import {
@@ -17,6 +16,7 @@ import {
   deleteExperimentRecord,
   diffExperimentRecords,
   executeExperiment,
+  experimentRecordFromEnvelope,
   loadExperimentRecords,
   type ExperimentRecord,
 } from './experimentRecord'
@@ -36,23 +36,6 @@ const compactDate = (date: string) =>
     minute: '2-digit',
   }).format(new Date(date))
 
-function fromServerEnvelope(envelope: ExperimentEnvelope): ExperimentRecord {
-  return {
-    id: envelope.experiment_id,
-    technique: envelope.technique_id as ExperimentRecord['technique'],
-    modelKey: envelope.result.model_key,
-    startedAt: envelope.started_at,
-    completedAt: envelope.finished_at,
-    status: 'succeeded',
-    request: envelope.request.input,
-    response: envelope.result,
-    serverExperimentId: envelope.experiment_id,
-    lineage: envelope.parent_experiment_id && envelope.lineage_operation
-      ? { parentId: envelope.parent_experiment_id, operation: envelope.lineage_operation }
-      : undefined,
-  }
-}
-
 function downloadRecord(record: ExperimentRecord) {
   const blob = new Blob([JSON.stringify({ schemaVersion: 1, record }, null, 2)], {
     type: 'application/json',
@@ -65,7 +48,13 @@ function downloadRecord(record: ExperimentRecord) {
   URL.revokeObjectURL(url)
 }
 
-export function ExperimentHistory() {
+export function ExperimentHistory({
+  allowServerDeletion = true,
+  focusExperimentId = null,
+}: {
+  allowServerDeletion?: boolean
+  focusExperimentId?: string | null
+}) {
   const [records, setRecords] = useState(loadExperimentRecords)
   const [selected, setSelected] = useState<string[]>([])
   const [forking, setForking] = useState<ExperimentRecord | null>(null)
@@ -85,7 +74,7 @@ export function ExperimentHistory() {
         const localServerIds = new Set(localRecords.map((record) => record.serverExperimentId).filter(Boolean))
         const remoteOnly = experiments
           .filter((experiment) => !localServerIds.has(experiment.experiment_id))
-          .map(fromServerEnvelope)
+          .map(experimentRecordFromEnvelope)
         return [...localRecords, ...remoteOnly]
           .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
           .slice(0, 25)
@@ -222,6 +211,12 @@ export function ExperimentHistory() {
         <span>Replay restores the exact request. Fork opens an editable copy. Select two runs to disclose every input and output difference.</span>
       </div>
 
+      {focusExperimentId && !records.some((record) => record.id === focusExperimentId) && (
+        <p className="history-linked-receipt" role="status">
+          Loading shared receipt {focusExperimentId.slice(0, 8)}…
+        </p>
+      )}
+
       {actionError && <p className="history-error" role="alert">{actionError}</p>}
 
       {!records.length && (
@@ -234,7 +229,7 @@ export function ExperimentHistory() {
 
       <ol className="history-list">
         {records.map((record, index) => (
-          <li key={record.id}>
+          <li key={record.id} className={record.id === focusExperimentId ? 'is-linked-receipt' : ''}>
             <label className="history-compare-toggle">
               <input
                 type="checkbox"
@@ -267,7 +262,9 @@ export function ExperimentHistory() {
               </button>
               <button type="button" disabled={busy === record.id || record.status !== 'succeeded'} onClick={() => beginFork(record)}>Fork</button>
               <button type="button" onClick={() => downloadRecord(record)}>Export JSON</button>
-              <button type="button" disabled={busy === record.id} onClick={() => void remove(record)}>Delete receipt</button>
+              {(!record.serverExperimentId || allowServerDeletion) && (
+                <button type="button" disabled={busy === record.id} onClick={() => void remove(record)}>Delete receipt</button>
+              )}
             </div>
           </li>
         ))}

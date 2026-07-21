@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +19,7 @@ class Settings(BaseSettings):
     hf_secret_name: str = "huggingface-secret"
     modal_jlens_app_name: str = "mechanoscope"
     experiment_db_path: str = ".data/mechanoscope-experiments.sqlite3"
+    admin_token: SecretStr | None = None
 
     @property
     def cors_origin_list(self) -> list[str]:

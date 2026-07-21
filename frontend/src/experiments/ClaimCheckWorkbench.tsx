@@ -1,7 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
+import { fetchExperiments } from '../api'
 import { buildClaimCheck, claimCheckSvg, type ClaimCheck } from './claimCheck'
-import { loadExperimentRecords, type ExperimentRecord } from './experimentRecord'
+import {
+  experimentRecordFromEnvelope,
+  loadExperimentRecords,
+  type ExperimentRecord,
+} from './experimentRecord'
 
 const promptFrom = (record: ExperimentRecord) => {
   const prompt = (record.request as { prompt?: unknown }).prompt
@@ -29,7 +34,7 @@ export function ClaimCheckWorkbench({
   onRunLens: () => void
   onRunSteering: () => void
 }) {
-  const records = useMemo(() => loadExperimentRecords(), [])
+  const [records, setRecords] = useState(loadExperimentRecords)
   const observations = records.filter((record) => record.status === 'succeeded' && record.technique === 'jacobian_lens')
   const interventions = records.filter((record) => record.status === 'succeeded' && record.technique === 'activation_steering')
   const [observationId, setObservationId] = useState(observations[0]?.id ?? '')
@@ -37,6 +42,31 @@ export function ClaimCheckWorkbench({
   const [question, setQuestion] = useState('Can these two runs support one scientific claim?')
   const [result, setResult] = useState<ClaimCheck | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void fetchExperiments().then(({ experiments }) => {
+      if (!active) return
+      if (!Array.isArray(experiments)) return
+      setRecords((localRecords) => {
+        const knownIds = new Set(localRecords.map((record) => record.serverExperimentId ?? record.id))
+        const remoteOnly = experiments
+          .filter((experiment) => !knownIds.has(experiment.experiment_id))
+          .map(experimentRecordFromEnvelope)
+        return [...localRecords, ...remoteOnly]
+          .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
+          .slice(0, 25)
+      })
+    }).catch(() => {
+      // Claim checking remains available for browser-local receipts while offline.
+    })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!observationId && observations[0]) setObservationId(observations[0].id)
+    if (!interventionId && interventions[0]) setInterventionId(interventions[0].id)
+  }, [interventionId, interventions, observationId, observations])
 
   const checkClaim = () => {
     setError(null)

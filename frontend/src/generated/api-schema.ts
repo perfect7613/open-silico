@@ -715,7 +715,9 @@ export interface operations {
     delete_experiment_api_experiments__experiment_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path: {
                 experiment_id: string;
             };
