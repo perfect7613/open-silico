@@ -19,6 +19,17 @@ For a short evaluation:
 
 The unsuccessful intervention is deliberately retained. A research tool should expose negative evidence instead of turning every run into a success story.
 
+### ChatGPT research copilot
+
+Connect the remote MCP endpoint and state a falsifiable hypothesis. The copilot follows a guarded workflow:
+
+```text
+hypothesis → digest-pinned paired plan → explicit GPU approval
+           → J-Lens receipt + steering receipt → supported/unsupported conclusions
+```
+
+The approved plan cannot be silently changed before execution. ChatGPT receives both durable receipts and a structured evidence report, including failed comparability checks and conclusions the experiment does not support.
+
 ## What is implemented
 
 | Capability | Status |
@@ -32,6 +43,7 @@ The unsuccessful intervention is deliberately retained. A research tool should e
 | Replay, fork, compare, and JSON export | Available |
 | Claim compatibility guard | Available |
 | Remote MCP tools and embedded result widget | Available |
+| Digest-pinned ChatGPT research copilot | Available |
 | On-demand Modal GPU execution | Available |
 
 ## Why it is different
@@ -151,6 +163,14 @@ https://your-workspace--mechanoscope-mcp.modal.run/mcp
 ```
 
 Add that HTTPS endpoint to an MCP-compatible client. In ChatGPT Developer Mode, the server exposes model discovery, experiment planning, receipt lookup, execution, replay, and fork tools. GPU-changing tools require an explicit approval field; read-only discovery does not wake a GPU.
+
+A useful first prompt is:
+
+```text
+Test the hypothesis that a cat-related residual direction changes how Qwen describes
+a household pet. Plan the controlled study first, show me the exact requests and
+limitations, and do not use GPU compute until I approve the unchanged plan.
+```
 
 ## Local development
 

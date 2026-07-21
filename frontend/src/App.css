@@ -1522,6 +1522,7 @@
 .representation-volume > header > div:first-child { margin-right: auto; display: grid; gap: 4px; }
 .representation-volume > header p { margin: 0; color: #6f8a93; font: 600 7px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
 .representation-volume > header h3 { margin: 0; color: #dcebed; font: 650 12px/1 var(--mono); letter-spacing: -.01em; }
+.representation-volume > header small { color: #55717a; font: 550 7px/1.2 var(--mono); letter-spacing: .03em; }
 .volume-camera-controls { display: flex; gap: 5px; }
 .volume-camera-controls button { border-color: #3b515a; background: #101f25; color: #7f979e; }
 .volume-camera-controls button.is-active { border-color: #9fb8bd; color: #edffff; box-shadow: inset 0 -2px 0 #27c4ca; }
@@ -1556,6 +1557,19 @@
 .volume-legend i,
 .volume-legend span { width: 19px; height: 5px; display: block; background: #27c4ca; }
 .volume-legend span { margin-left: 6px; background: #15303a; }
+
+.volume-layer-index { position: absolute; z-index: 4; top: 14px; right: 14px; width: 116px; border: 1px solid #38515a; background: rgba(8, 20, 25, .9); box-shadow: 8px 8px 0 rgba(0,0,0,.2); backdrop-filter: blur(10px); }
+.volume-layer-index > header { min-height: 30px; padding: 0 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #30454d; color: #667f87; font: 650 6px/1 var(--mono); letter-spacing: .08em; }
+.volume-layer-index > header b { color: var(--acid); font-size: 7px; }
+.volume-layer-index > div { max-height: min(290px, calc(100vh - 300px)); padding: 5px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; overflow-y: auto; }
+.volume-layer-index button { min-height: 25px; padding: 0 4px; display: flex; align-items: center; gap: 4px; border: 1px solid transparent; background: #10242b; color: #6f8991; cursor: pointer; font: 650 6px/1 var(--mono); }
+.volume-layer-index button i { width: 3px; height: 11px; background: #2c626b; transition: height 140ms cubic-bezier(.23,1,.32,1), background-color 140ms ease; }
+.volume-layer-index button:hover,
+.volume-layer-index button:focus-visible { border-color: #52717a; color: #d9f4f5; outline: 0; }
+.volume-layer-index button:hover i,
+.volume-layer-index button:focus-visible i { height: 16px; background: #55dce2; }
+.volume-layer-index button.is-active { border-color: #8da1a6; background: #17313a; color: #f2ffff; box-shadow: inset 0 -2px var(--acid); }
+.volume-layer-index button.is-active i { height: 17px; background: var(--acid); }
 
 .volume-readout {
   position: absolute;
@@ -1720,6 +1734,8 @@
   .volume-camera-controls { width: 100%; }
   .volume-camera-controls button { flex: 1; }
   .volume-readout { top: 9px; left: 9px; }
+  .volume-layer-index { top: 9px; right: 9px; width: 102px; }
+  .volume-layer-index > div { grid-template-columns: repeat(2, 1fr); }
   .volume-legend { display: none; }
   .representation-volume > footer { flex-wrap: wrap; gap: 5px 12px; padding-block: 8px; }
   .representation-volume > footer strong { width: 100%; margin-left: 0; }

@@ -15,7 +15,10 @@ from open_silico.techniques.jacobian_lens import JLENS_REVISION, JacobianLensEng
 APP_NAME = "mechanoscope"
 CACHE_PATH = "/cache"
 DATA_PATH = "/data"
-HF_SECRET_NAME = os.getenv("MECHANOSCOPE_HF_SECRET_NAME", "").strip()
+HF_SECRET_NAME = (
+    os.getenv("MECHANOSCOPE_HF_SECRET_NAME", "countersteer-huggingface").strip()
+    or "countersteer-huggingface"
+)
 DEPLOYED_API_URL = os.getenv(
     "MECHANOSCOPE_DEPLOYED_API_URL",
     "https://ameymuke252003--mechanoscope-api.modal.run",
@@ -24,7 +27,7 @@ DEPLOYED_API_URL = os.getenv(
 app = modal.App(APP_NAME)
 artifact_cache = modal.Volume.from_name("open-silico-artifacts", create_if_missing=True)
 experiment_store = modal.Volume.from_name("mechanoscope-experiments", create_if_missing=True)
-hf_secrets = [modal.Secret.from_name(HF_SECRET_NAME)] if HF_SECRET_NAME else []
+hf_secrets = [modal.Secret.from_name(HF_SECRET_NAME)]
 
 gpu_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -84,8 +87,8 @@ api_image = (
 )
 
 mcp_image = (
-    modal.Image.debian_slim(python_version="3.12")
-    .apt_install("nodejs", "npm")
+    modal.Image.from_registry("node:22-bookworm-slim", add_python="3.12")
+    .entrypoint([])
     .uv_pip_install("pydantic>=2.11,<3")
     .add_local_python_source("open_silico", copy=True)
     .add_local_dir(
