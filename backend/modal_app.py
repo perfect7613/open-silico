@@ -15,7 +15,7 @@ from open_silico.techniques.jacobian_lens import JLENS_REVISION, JacobianLensEng
 APP_NAME = "mechanoscope"
 CACHE_PATH = "/cache"
 DATA_PATH = "/data"
-HF_SECRET_NAME = os.getenv("MECHANOSCOPE_HF_SECRET_NAME", "huggingface-secret")
+HF_SECRET_NAME = os.getenv("MECHANOSCOPE_HF_SECRET_NAME", "").strip()
 DEPLOYED_API_URL = os.getenv(
     "MECHANOSCOPE_DEPLOYED_API_URL",
     "https://ameymuke252003--mechanoscope-api.modal.run",
@@ -24,6 +24,7 @@ DEPLOYED_API_URL = os.getenv(
 app = modal.App(APP_NAME)
 artifact_cache = modal.Volume.from_name("open-silico-artifacts", create_if_missing=True)
 experiment_store = modal.Volume.from_name("mechanoscope-experiments", create_if_missing=True)
+hf_secrets = [modal.Secret.from_name(HF_SECRET_NAME)] if HF_SECRET_NAME else []
 
 gpu_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -43,7 +44,7 @@ gpu_image = (
     image=gpu_image,
     gpu="L40S",
     volumes={CACHE_PATH: artifact_cache},
-    secrets=[modal.Secret.from_name(HF_SECRET_NAME)],
+    secrets=hf_secrets,
     timeout=600,
     scaledown_window=300,
 )
@@ -136,7 +137,7 @@ def api():
     return create_app(
         Settings(
             environment="modal",
-            hf_access_configured=True,
+            hf_access_configured=bool(HF_SECRET_NAME),
             experiment_db_path=f"{DATA_PATH}/experiments.sqlite3",
             _env_file=None,
         ),

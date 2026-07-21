@@ -1,209 +1,243 @@
 # Mechanoscope
 
-Mechanoscope is an open-source laboratory for observing, intervening on, and debugging the internal representations of open-weight language models.
+Mechanoscope is an open-source observatory for inspecting and intervening on open-weight language models. It turns interpretability techniques into reproducible experiments with pinned model revisions, matched controls, durable receipts, replay, forking, and explicit limits on what the evidence supports.
 
-It combines a browser-based research interface, a typed FastAPI gateway, pluggable technique engines, and parameterized Modal GPU workers. Model weights and fitted artifacts stay on remote infrastructure; local development does not download model checkpoints.
+Model weights run on on-demand Modal GPUs and are never downloaded to the browser or local development machine.
 
-## What works today
+## Live demo
 
-| Capability | Gemma 3 1B Instruct | Qwen3 1.7B |
-| --- | --- | --- |
-| Model switcher | Yes | Yes |
-| Jacobian Lens | Yes | Yes |
-| Contrastive activation steering | Yes | Yes |
-| Remote Modal execution | Yes | Yes |
-| Browser-local experiment history and JSON export | Yes | Yes |
-| Cross-technique Causal Trace and X-Ray card | Yes | Yes |
+- **Web application:** [ameymuke252003--mechanoscope-api.modal.run](https://ameymuke252003--mechanoscope-api.modal.run)
+- **Remote MCP endpoint:** `https://ameymuke252003--mechanoscope-mcp.modal.run/mcp`
+- **Source:** [github.com/perfect7613/open-silico](https://github.com/perfect7613/open-silico)
 
-## Why Mechanoscope
+For a short evaluation:
 
-Interpretability platforms usually make one of two things excellent: a large atlas of internal features or an environment for expert model-development teams. Mechanoscope is building the missing open workflow between the instruments: a falsifiable, reproducible causal debugging loop.
+1. Select **Open the judge demo** to load real, persisted GPU receipts.
+2. Open the Jacobian Lens receipt to inspect its layer-by-position readout.
+3. Compare the matched steering receipt, including the intervention that did not produce the intended concept.
+4. Open **Check a claim**. Mechanoscope verifies the shared model and exact prompt, then blocks a causal-mechanism claim because the steering vector was not derived from the selected J-Lens representation.
 
-| Existing approach | What users already get | Mechanoscope's distinct focus |
-| --- | --- | --- |
-| Public interpretability atlases | Large hosted datasets, feature search, steering, circuits, model readouts, APIs, and community releases | Join observations and interventions into one replayable evidence chain instead of treating each technique result as the endpoint |
-| Closed model-design environments | Agent-planned experiments, diagnostics, intervention, team workflows, and managed infrastructure | Make the experiment protocol open, inspectable, self-hostable, and explicit about the boundary between influence and mechanism |
-| Research repositories and notebooks | Fast access to new techniques and reference implementations | Turn techniques into typed adapters inside a consistent debugging and evidence workflow |
-| **Mechanoscope** | An open model observatory with remote execution and typed technique adapters | Hypothesis → observation → matched intervention → limitation-aware causal receipt → replay/share |
+The unsuccessful intervention is deliberately retained. A research tool should expose negative evidence instead of turning every run into a success story.
 
-### The first moat: Causal Trace
+## What is implemented
 
-Causal Trace pairs a Jacobian Lens observation with an activation-steering intervention on the same pinned model. It produces an evidence ladder, preserves both experiment IDs, identifies whether the matched outputs diverged, and keeps “mechanism established” unresolved until stronger controls exist. The result exports as JSON for reproduction and as a shareable SVG X-Ray card.
+| Capability | Status |
+| --- | --- |
+| Gemma 3 1B and Qwen3 1.7B model switcher | Available |
+| Interactive Jacobian Lens | Available |
+| Contrastive activation steering | Available |
+| Linked 2D and React Three Fiber views | Available |
+| Matched baseline and intervention generation | Available |
+| Persistent experiment receipts | Available |
+| Replay, fork, compare, and JSON export | Available |
+| Claim compatibility guard | Available |
+| Remote MCP tools and embedded result widget | Available |
+| On-demand Modal GPU execution | Available |
 
-This is intentionally stronger than another attractive dashboard: each new interpretability technique can become an Observation, Intervention, or Evaluation adapter in the same protocol. The durable goal is an open corpus of forkable causal traces and evaluation recipes.
+## Why it is different
 
-### Linked Jacobian Lens
+Mechanoscope treats an interpretability result as evidence inside an experiment, not as a self-explanatory picture.
 
-The J-Lens instrument is based on the interaction model in Anthropic's Jacobian Lens research interface. It provides:
+The platform has three technique roles:
 
-- a layer-by-position argmax matrix;
-- linked by-layer and by-position token readouts;
-- token pinning with exact full-vocabulary ranks;
-- a logarithmic rank heatmap;
-- synchronized rank trajectories across layers and positions;
-- a lazy-loaded React Three Fiber representation volume with synchronized 2D, 3D, and split views; and
-- pinned model, lens, and implementation revisions for reproducibility.
+- **Observation** instruments expose internal structure, such as Jacobian Lens readouts.
+- **Intervention** instruments change a controlled internal signal, such as activation steering.
+- **Evaluation** instruments determine whether two receipts are comparable and what conclusions remain unsupported.
 
-J-Lens readouts are approximate learned transports into the final-layer basis. They should not be interpreted as literal model thoughts.
+The current Claim Check is intentionally conservative. Matching a model and prompt is useful parallel evidence, but it is not a causal chain unless the intervention is derived from the observed representation and evaluated with appropriate controls.
+
+## Instruments
+
+### Jacobian Lens
+
+The workbench presents a bounded layer-by-position slice with:
+
+- token-level input positions and predictions;
+- linked by-layer and by-position readouts;
+- full-vocabulary rank tracking for pinned tokens;
+- synchronized rank heatmaps and trajectories;
+- 2D, 3D, and split representation views; and
+- pinned checkpoint, fitted-lens, and implementation revisions.
+
+Jacobian Lens is a learned approximation into the final-layer basis. Its token readouts are not literal model thoughts.
 
 ### Activation steering
 
-The steering workbench derives a contrast direction from user-supplied examples:
+The steering engine constructs a contrast direction:
 
 ```text
-direction = mean(positive activations) - mean(negative activations)
+direction = mean(positive-example activations) - mean(negative-example activations)
 ```
 
-It then runs baseline and steered generations with matched sampling settings and seed. The intervention is applied through a temporary residual-stream hook and removed in an exception-safe scope after every request. A behavioral change demonstrates causal influence at the selected layer; it does not prove that the direction has one monosemantic human interpretation.
+It generates a baseline and intervention branch with matched sampling parameters and seed. A residual-stream hook is installed only for the scoped intervention and removed safely afterward. A changed output demonstrates influence for that run; it does not establish that the direction is monosemantic.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    UI[React research workbench] -->|HTTPS / JSON| API[FastAPI gateway]
-    API --> E[Experiment gateway]
-    E --> T[Technique registry]
-    E -->|Modal adapter| R[Remote model runtime]
-    T --> J[J-Lens engine]
-    T --> S[Steering engine]
-    J --> R
-    S --> R
-    R --> M[Version-pinned model]
-    R --> V[(Artifact cache)]
+    Browser[React workbench] --> API[FastAPI gateway]
+    ChatGPT[ChatGPT or MCP client] --> MCP[MCP Apps server]
+    MCP --> API
+    API --> Experiments[Experiment orchestrator]
+    Experiments --> Registry[Model and technique registries]
+    Experiments --> Worker[Modal GPU adapter]
+    Worker --> Runtime[Remote model runtime]
+    Runtime --> JL[J-Lens engine]
+    Runtime --> Steering[Steering engine]
+    API --> Receipts[(Persistent receipt volume)]
+    Runtime --> Artifacts[(Model and lens cache)]
 ```
 
-- `frontend/` — React, TypeScript, Vite, React Three Fiber, and the technique-specific interfaces.
-- `backend/open_silico/model_specs.py` — dependency-light, authoritative model facts used by local and GPU runtimes.
-- `backend/open_silico/technique_registry.py` — authoritative capability metadata and the extension point for future techniques.
-- `backend/open_silico/remote_runtime.py` — model loading, activation capture, intervention, and generation independent of Modal.
-- `backend/open_silico/techniques/` — scientific technique engines behind typed contracts.
-- `backend/modal_app.py` — the Modal deployment adapter and GPU image boundary.
-- `tests/backend/` — fast contract and API tests.
-- `tests/remote/` — opt-in tests against deployed GPU infrastructure.
-- `docs/PRD.md` — MVP product requirements and longer-term roadmap.
+- `frontend/` contains the React, TypeScript, and React Three Fiber workbench.
+- `backend/open_silico/` contains contracts, registries, experiment orchestration, persistence, and technique modules.
+- `backend/modal_app.py` contains only Modal deployment adapters and remote lifecycle wiring.
+- `mcp-server/` contains the streamable HTTP MCP server and embedded Apps SDK result widget.
+- `scripts/` contains reproducible deployment and local MCP entry points.
 
-## Models and artifacts
-
-| Key | Checkpoint | Access |
-| --- | --- | --- |
-| `gemma-3-1b-it` | `google/gemma-3-1b-it` | Gated; requires accepting the Gemma license and supplying a Hugging Face token |
-| `qwen3-1.7b` | `Qwen/Qwen3-1.7B` | Public, Apache-2.0 |
-
-Every checkpoint, fitted lens, and Jacobian Lens dependency is pinned to an immutable revision in the source. See `backend/modal_app.py` and `backend/open_silico/model_specs.py` for the exact artifact identities.
-
-## Local development
+## Self-deploy on Modal
 
 Prerequisites:
 
 - Python 3.12 or newer;
 - [`uv`](https://docs.astral.sh/uv/);
-- Node.js 22 or newer; and
-- a configured [Modal](https://modal.com/) account for real model execution.
+- Node.js 20 or newer; and
+- an authenticated [Modal](https://modal.com/) CLI profile.
 
-Install dependencies and create local configuration:
+Clone and deploy:
+
+```bash
+git clone https://github.com/perfect7613/open-silico.git
+cd open-silico
+uv sync
+./scripts/deploy-modal.sh
+```
+
+This deploys the web application, persistent receipt volume, MCP endpoint, and an L40S model worker. The public Qwen model requires no Hugging Face credential.
+
+Gemma is gated. After accepting its license, create a Modal Secret containing `HF_TOKEN` and pass its name during deployment:
+
+```bash
+uv run modal secret create huggingface-secret HF_TOKEN=hf_your_token
+MECHANOSCOPE_HF_SECRET_NAME=huggingface-secret ./scripts/deploy-modal.sh
+```
+
+Do not place a Hugging Face token in an `.env` file committed to Git.
+
+If the Modal profile name differs from the workspace URL slug, provide the API URL explicitly:
+
+```bash
+MECHANOSCOPE_DEPLOYED_API_URL=https://your-workspace--mechanoscope-api.modal.run \
+  ./scripts/deploy-modal.sh
+```
+
+The deployment remains addressable until stopped. Web containers scale down while idle, and the GPU worker scales down five minutes after its last experiment.
+
+## Run the MCP server yourself
+
+The MCP server can target either a local API or a deployed Mechanoscope API.
+
+```bash
+MECHANOSCOPE_API_URL=https://your-workspace--mechanoscope-api.modal.run \
+MECHANOSCOPE_APP_URL=https://your-workspace--mechanoscope-api.modal.run \
+  ./scripts/run-mcp-local.sh
+```
+
+The streamable HTTP endpoint is then available at `http://127.0.0.1:8787/mcp`.
+
+For a remote deployment, `./scripts/deploy-modal.sh` packages the same server at:
+
+```text
+https://your-workspace--mechanoscope-mcp.modal.run/mcp
+```
+
+Add that HTTPS endpoint to an MCP-compatible client. In ChatGPT Developer Mode, the server exposes model discovery, experiment planning, receipt lookup, execution, replay, and fork tools. GPU-changing tools require an explicit approval field; read-only discovery does not wake a GPU.
+
+## Local development
+
+Install dependencies and create non-secret local configuration:
 
 ```bash
 uv sync
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
-cd frontend && npm ci
+npm --prefix frontend ci
+npm --prefix mcp-server ci
 ```
 
-Start the local API from the repository root:
+Run the API:
 
 ```bash
 PYTHONPATH=backend uv run uvicorn open_silico.api:app --reload
 ```
 
-Start the frontend in a second terminal:
+Run the browser application in another terminal:
 
 ```bash
-cd frontend
-npm run dev
+npm --prefix frontend run dev
 ```
 
-Open `http://localhost:5173`. Local API documentation is available at `http://localhost:8000/docs`.
+Open `http://localhost:5173`. FastAPI documentation is available at `http://localhost:8000/docs`.
 
-The local `.env` files are ignored by Git. Only non-sensitive examples are committed.
+## API and MCP surface
 
-## Modal deployment
-
-Gemma requires a Modal Secret containing `HF_TOKEN`. The default secret name is `huggingface-secret`; create it through the Modal dashboard or CLI after accepting the model license on Hugging Face.
-
-Deploy the API and parameterized L40S worker:
-
-```bash
-MECHANOSCOPE_HF_SECRET_NAME=huggingface-secret \
-  uv run modal deploy backend/modal_app.py
-```
-
-The current public demo is [ameymuke252003--mechanoscope-api.modal.run](https://ameymuke252003--mechanoscope-api.modal.run). The web application scales to zero; a GPU worker wakes only when an experiment is submitted.
-
-To use the deployed API from the local Vite application, configure `frontend/.env`:
-
-```dotenv
-VITE_API_BASE_URL=
-VITE_API_PROXY_TARGET=https://your-workspace--mechanoscope-api.modal.run
-```
-
-## API
+Important API routes:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | API and catalog status without waking a GPU |
-| `GET` | `/api/models` | Model access and technique capability catalog |
-| `GET` | `/api/techniques` | Platform technique metadata and execution capabilities |
-| `POST` | `/api/experiments/run` | Run a typed technique request and return a replayable provenance envelope |
-| `POST` | `/api/jlens/run` | Compute a bounded linked Jacobian Lens slice |
-| `POST` | `/api/steer` | Run a matched baseline/steered generation experiment |
+| `GET` | `/health` | Check API state without waking a GPU |
+| `GET` | `/api/models` | List models, access state, and capabilities |
+| `GET` | `/api/techniques` | List technique metadata |
+| `GET` | `/api/experiments` | List durable experiment receipts |
+| `POST` | `/api/experiments/run` | Execute a typed experiment |
+| `POST` | `/api/experiments/{id}/replay` | Repeat an exact recorded request |
+| `POST` | `/api/experiments/{id}/fork` | Run an explicitly modified child request |
 
-Interactive OpenAPI documentation is served at `/docs`.
+The MCP server exposes equivalent discovery and experiment operations. Execution, replay, and fork requests must carry explicit approval before remote GPU work begins.
 
 ## Verification
-
-Run the local suite:
 
 ```bash
 uv run ruff check backend tests
 uv run ruff format --check backend tests
 uv run pytest
 
-cd frontend
-npm test
-npm run lint
-npm run build
+npm --prefix frontend test -- --run
+npm --prefix frontend run build
+
+npm --prefix mcp-server test -- --run
+npm --prefix mcp-server run build
 ```
 
-After deploying Modal, run the opt-in tests for both model/lens pairs and their strength-zero steering controls:
+Remote smoke tests are opt-in because they consume GPU resources:
 
 ```bash
-MECHANOSCOPE_RUN_MODAL_SMOKE=1 \
-  uv run pytest tests/remote/test_modal_jlens.py
+MECHANOSCOPE_RUN_MODAL_SMOKE=1 uv run pytest tests/remote/test_modal_jlens.py
 ```
-
-Remote tests consume GPU resources and are skipped by default.
-
-### Credentials
-
-| Credential | Required for | Status |
-| --- | --- | --- |
-| Modal CLI authentication | Real model execution | Already configured locally |
-| Modal Secret containing `HF_TOKEN` | Gated Gemma checkpoint | Configure the secret named by `MECHANOSCOPE_HF_SECRET_NAME` |
-
-Never commit these values. Secrets should be injected through provider secret stores or the local shell.
 
 ## Security and data handling
 
-- Provider credentials belong in Modal Secrets, never browser code or repository files.
-- Prompts are sent to the configured Modal deployment for inference.
-- The current API does not implement persistent experiment storage.
-- Request sizes and generation lengths are bounded at the API boundary.
-- One model worker handles one stateful intervention at a time so temporary hooks cannot overlap.
+- Provider credentials are read from Modal Secrets, never sent to the browser or MCP client.
+- Prompts and technique inputs are sent to the configured deployment and retained in experiment receipts.
+- Public receipt deletion is disabled unless an owner bearer token is configured.
+- Prompt length, generation length, and MCP execution approval are validated at system boundaries.
+- One stateful intervention runs per model worker so temporary activation hooks cannot overlap.
 
-## Roadmap
+Do not use the public demo for confidential prompts.
 
-Phase 1 builds a trustworthy experiment loop through steering controls, multi-turn comparisons, evidence sweeps, reproducible local records, and compute safety. Phase 2 turns the two-model application into a capability-aware platform with authoritative model and technique registries, Hugging Face onboarding, runtime adapters, and artifact compatibility checks. The implementation sequence and exit criteria are documented in [`docs/PRD.md`](docs/PRD.md); tracked work remains in the repository's existing [GitHub Issues](https://github.com/perfect7613/open-silico/issues).
+## Stop a deployment
+
+```bash
+uv run modal app stop mechanoscope
+```
+
+Stopping the app terminates its containers but does not delete persistent volumes. To permanently remove saved receipts:
+
+```bash
+uv run modal volume delete mechanoscope-experiments
+```
+
+Volume deletion is destructive.
 
 ## License
 
-Mechanoscope is licensed under the [Apache License 2.0](LICENSE). Model weights, fitted lenses, and third-party libraries retain their respective licenses and terms.
+Mechanoscope is licensed under the [Apache License 2.0](LICENSE). Model weights, fitted lenses, and third-party packages retain their own licenses and usage terms.

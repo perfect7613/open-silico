@@ -227,7 +227,10 @@ def test_production_deletion_requires_matching_owner_token() -> None:
     path = f"/api/experiments/{experiment['experiment_id']}"
 
     assert active_client.delete(path).status_code == 401
-    assert active_client.delete(
-        path,
-        headers={"Authorization": "Bearer owner-secret"},
-    ).status_code == 204
+    assert (
+        active_client.delete(
+            path,
+            headers={"Authorization": "Bearer owner-secret"},
+        ).status_code
+        == 204
+    )
