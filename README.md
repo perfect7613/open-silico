@@ -33,12 +33,31 @@ The approved plan cannot be silently changed before execution. ChatGPT receives 
 
 The website's copilot screen is a transparent handoff, not a simulated agent: GPT-5.6 creates the plan by calling `plan_research_study`, execution is refused until the user approves its exact digest, and `inspect_research_study` produces the final evidence boundary.
 
-### OpenAI Build Week implementation
+## Built with OpenAI Codex and GPT-5.6
 
-- **GPT-5.6** is the reasoning layer in ChatGPT: it converts a research hypothesis into the typed MCP study plan, presents the approval checkpoint, and explains the returned evidence report.
-- **Codex** accelerated the product implementation across the typed experiment architecture, Modal runtime separation, generated API contracts, MCP tools, React workbenches, scientific guardrails, automated tests, and live deployment.
-- **Key product decision:** the language model never receives authority to silently spend GPU compute. Planning is read-only; execution requires an explicit approval tied to the unchanged plan digest.
-- **Key scientific decision:** observation and intervention receipts remain separate unless representation lineage is established. Matching a model and prompt does not manufacture a causal link.
+OpenAI technology is part of both how Mechanoscope was built and how a researcher uses it.
+
+| OpenAI technology | Role in Mechanoscope |
+| --- | --- |
+| **GPT-5.6** | Acts as the research copilot in ChatGPT. It turns a natural-language hypothesis into a typed, controlled experiment plan; shows the exact GPU request and limitations; asks for approval; invokes the MCP instruments; inspects the resulting receipts; and explains which conclusions are supported or unsupported. |
+| **Codex** | Served as the engineering collaborator for the repository: researching the source techniques, shaping the modular experiment architecture, implementing the Python/Modal backend and React workbenches, integrating MCP, improving the 2D and 3D instruments, writing regression tests, debugging live GPU runs, and deploying the working system. |
+
+The central workflow is:
+
+```text
+Researcher hypothesis
+  → GPT-5.6 proposes a digest-pinned controlled study
+  → researcher explicitly approves GPU use
+  → Mechanoscope runs observation and intervention instruments
+  → durable receipts return through MCP
+  → GPT-5.6 explains the evidence boundary
+```
+
+This is more than a chat wrapper. GPT-5.6 operates against typed research tools and real experiment records, while Mechanoscope remains the authority for execution, provenance, and compatibility checks. The model cannot silently spend GPU compute: planning is read-only, and execution requires approval tied to the unchanged plan digest.
+
+Codex was used throughout the implementation loop rather than only for initial scaffolding. It helped inspect upstream research code and documentation, evolve the architecture into separable instrument/runtime/orchestration modules, implement and test vertical slices, diagnose remote Modal failures, visually refine the frontend, and verify the production deployment. Scientific claims remain grounded in stored results and explicit checks—not in an AI-generated narrative.
+
+The most important scientific guardrail is that observation and intervention receipts remain separate unless representation lineage is established. A shared model and prompt make two runs comparable, but do not manufacture a causal relationship between a Jacobian Lens feature and a steering vector.
 
 For the submission video, show this exact path in under three minutes: state the hypothesis in GPT-5.6, inspect the proposed plan, approve it, open both receipts, and end on the unsupported-conclusions block. The Devpost submission also requires the Codex `/feedback` session ID; it is intentionally not stored in this repository.
 
