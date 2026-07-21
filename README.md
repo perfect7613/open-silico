@@ -10,18 +10,19 @@ Model weights run on on-demand Modal GPUs and are never downloaded to the browse
 - **Remote MCP endpoint:** `https://ameymuke252003--mechanoscope-mcp.modal.run/mcp`
 - **Source:** [github.com/perfect7613/open-silico](https://github.com/perfect7613/open-silico)
 
-For a short evaluation:
+For a short evaluation with no new GPU spend:
 
-1. Select **Open the judge demo** to load real, persisted GPU receipts.
-2. Open the Jacobian Lens receipt to inspect its layer-by-position readout.
-3. Compare the matched steering receipt, including the intervention that did not produce the intended concept.
-4. Open **Check a claim**. Mechanoscope verifies the shared model and exact prompt, then blocks a causal-mechanism claim because the steering vector was not derived from the selected J-Lens representation.
+1. Open **Research copilot** and read the five-stage protocol.
+2. Select **Inspect J-Lens receipt** or **Inspect steering receipt** to load the corresponding persisted GPU result directly.
+3. Open the Jacobian Lens receipt to inspect its layer-by-position readout.
+4. Compare the matched steering receipt, including the intervention that did not produce the intended concept.
+5. Open **Check a claim**. Mechanoscope verifies the shared model and exact prompt, then blocks a causal-mechanism claim because the steering vector was not derived from the selected J-Lens representation.
 
 The unsuccessful intervention is deliberately retained. A research tool should expose negative evidence instead of turning every run into a success story.
 
 ### ChatGPT research copilot
 
-Connect the remote MCP endpoint and state a falsifiable hypothesis. The copilot follows a guarded workflow:
+Connect the remote MCP endpoint to ChatGPT, select GPT-5.6, and state a falsifiable hypothesis. No separate OpenAI API key is required for this path. The copilot follows a guarded workflow:
 
 ```text
 hypothesis → digest-pinned paired plan → explicit GPU approval
@@ -29,6 +30,17 @@ hypothesis → digest-pinned paired plan → explicit GPU approval
 ```
 
 The approved plan cannot be silently changed before execution. ChatGPT receives both durable receipts and a structured evidence report, including failed comparability checks and conclusions the experiment does not support.
+
+The website's copilot screen is a transparent handoff, not a simulated agent: GPT-5.6 creates the plan by calling `plan_research_study`, execution is refused until the user approves its exact digest, and `inspect_research_study` produces the final evidence boundary.
+
+### OpenAI Build Week implementation
+
+- **GPT-5.6** is the reasoning layer in ChatGPT: it converts a research hypothesis into the typed MCP study plan, presents the approval checkpoint, and explains the returned evidence report.
+- **Codex** accelerated the product implementation across the typed experiment architecture, Modal runtime separation, generated API contracts, MCP tools, React workbenches, scientific guardrails, automated tests, and live deployment.
+- **Key product decision:** the language model never receives authority to silently spend GPU compute. Planning is read-only; execution requires an explicit approval tied to the unchanged plan digest.
+- **Key scientific decision:** observation and intervention receipts remain separate unless representation lineage is established. Matching a model and prompt does not manufacture a causal link.
+
+For the submission video, show this exact path in under three minutes: state the hypothesis in GPT-5.6, inspect the proposed plan, approve it, open both receipts, and end on the unsupported-conclusions block. The Devpost submission also requires the Codex `/feedback` session ID; it is intentionally not stored in this repository.
 
 ## What is implemented
 
@@ -163,6 +175,13 @@ https://your-workspace--mechanoscope-mcp.modal.run/mcp
 ```
 
 Add that HTTPS endpoint to an MCP-compatible client. In ChatGPT Developer Mode, the server exposes model discovery, experiment planning, receipt lookup, execution, replay, and fork tools. GPU-changing tools require an explicit approval field; read-only discovery does not wake a GPU.
+
+The MCP surface supports ChatGPT Developer Mode and other streamable-HTTP MCP clients. The browser workbench is tested on current Chrome for macOS and is designed for modern Chromium, Safari, and Firefox browsers. WebGL is required for the 3D layer view; the 2D instrument remains available without it.
+
+Persisted sample data is available without rebuilding or running a GPU:
+
+- [Jacobian Lens sample receipt](https://ameymuke252003--mechanoscope-api.modal.run/?experiment=bea87f1c-af24-48ea-af65-1f0030759a03)
+- [Activation steering sample receipt](https://ameymuke252003--mechanoscope-api.modal.run/?experiment=c4cf5bad-36d4-457b-8702-2f2624b102ea)
 
 A useful first prompt is:
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   runActivationSteering,
   forkExperiment,
+  fetchExperiment,
   fetchExperiments,
   deleteServerExperiment,
   replayExperiment,
@@ -84,6 +85,21 @@ export function ExperimentHistory({
     })
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    if (!focusExperimentId) return
+    let active = true
+    void fetchExperiment(focusExperimentId).then((experiment) => {
+      if (!active) return
+      setRecords((current) => {
+        if (current.some((record) => record.id === experiment.experiment_id)) return current
+        return [experimentRecordFromEnvelope(experiment), ...current].slice(0, 25)
+      })
+    }).catch(() => {
+      if (active) setActionError(`Shared receipt ${focusExperimentId.slice(0, 8)} could not be loaded.`)
+    })
+    return () => { active = false }
+  }, [focusExperimentId])
 
   const remove = async (record: ExperimentRecord) => {
     setBusy(record.id)

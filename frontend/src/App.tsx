@@ -4,6 +4,7 @@ import { JacobianLensWorkbench } from './JacobianLensWorkbench'
 import { SteeringWorkbench } from './SteeringWorkbench'
 import { ExperimentHistory } from './experiments/ExperimentHistory'
 import { ClaimCheckWorkbench } from './experiments/ClaimCheckWorkbench'
+import { ResearchCopilot } from './ResearchCopilot'
 import {
   fetchHealth,
   fetchModelCatalog,
@@ -88,11 +89,13 @@ function LoadingShell() {
 }
 
 function GettingStarted({
+  onOpenCopilot,
   onLookInside,
   onSteer,
   onCheck,
   onOpenDemo,
 }: {
+  onOpenCopilot: () => void
   onLookInside: () => void
   onSteer: () => void
   onCheck: () => void
@@ -105,14 +108,17 @@ function GettingStarted({
         <h3 id="getting-started-title">What do you want to learn about the model?</h3>
       </header>
       <div className="journey-cards">
+        <button type="button" onClick={onOpenCopilot}>
+          <i>1</i><span><strong>I have a research hypothesis</strong><small>Let ChatGPT design a controlled study, then approve GPU work explicitly.</small></span><b>Open copilot →</b>
+        </button>
         <button type="button" onClick={onLookInside}>
-          <i>1</i><span><strong>What is it representing?</strong><small>Look across layers and see which token-like ideas become prominent.</small></span><b>Look inside →</b>
+          <i>2</i><span><strong>What is it representing?</strong><small>Look across layers and see which token-like ideas become prominent.</small></span><b>Look inside →</b>
         </button>
         <button type="button" onClick={onSteer}>
-          <i>2</i><span><strong>Does an internal direction matter?</strong><small>Run the same prompt with and without one controlled intervention.</small></span><b>Test influence →</b>
+          <i>3</i><span><strong>Does an internal direction matter?</strong><small>Run the same prompt with and without one controlled intervention.</small></span><b>Test influence →</b>
         </button>
         <button type="button" onClick={onCheck}>
-          <i>3</i><span><strong>Am I claiming too much?</strong><small>Check whether two saved runs are actually comparable.</small></span><b>Check a claim →</b>
+          <i>4</i><span><strong>Am I claiming too much?</strong><small>Check whether two saved runs are actually comparable.</small></span><b>Check a claim →</b>
         </button>
       </div>
       <div className="demo-ribbon">
@@ -213,12 +219,13 @@ function ModelInstrument({
 
 function App() {
   const linkedExperimentId = new URLSearchParams(window.location.search).get('experiment')
+  const [focusExperimentId, setFocusExperimentId] = useState<string | null>(linkedExperimentId)
   const [catalog, setCatalog] = useState<ModelCatalog | null>(null)
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'models' | 'jlens' | 'steering' | 'claim' | 'history'>(
+  const [view, setView] = useState<'models' | 'copilot' | 'jlens' | 'steering' | 'claim' | 'history'>(
     linkedExperimentId ? 'history' : 'models',
   )
 
@@ -268,6 +275,7 @@ function App() {
         </a>
         <nav className="technique-nav" aria-label="Primary techniques">
           <button className={view === 'models' ? 'is-active' : ''} type="button" onClick={() => setView('models')}>Start</button>
+          <button className={view === 'copilot' ? 'is-active' : ''} type="button" onClick={() => setView('copilot')}>Research copilot <span>ChatGPT</span></button>
           <button className={view === 'jlens' ? 'is-active' : ''} type="button" onClick={openLens}>Look inside <span>J-Lens</span></button>
           <button className={view === 'steering' ? 'is-active' : ''} type="button" onClick={openSteering}>Test influence <span>Steer</span></button>
           <button className={view === 'claim' ? 'is-active' : ''} type="button" onClick={() => setView('claim')}>Check a claim <span>Guard</span></button>
@@ -322,6 +330,7 @@ function App() {
 
           {!loading && !error && view === 'models' && (
             <GettingStarted
+              onOpenCopilot={() => setView('copilot')}
               onLookInside={openLens}
               onSteer={openSteering}
               onCheck={() => setView('claim')}
@@ -341,6 +350,15 @@ function App() {
           {!loading && !error && selectedModel && view === 'models' && (
             <ModelInstrument model={selectedModel} onOpenLens={openLens} onOpenSteering={openSteering} />
           )}
+          {!loading && !error && selectedModel && view === 'copilot' && (
+            <ResearchCopilot
+              model={selectedModel}
+              onOpenReceipt={(experimentId) => {
+                setFocusExperimentId(experimentId)
+                setView('history')
+              }}
+            />
+          )}
           {!loading && !error && selectedModel && view === 'jlens' && (
             <JacobianLensWorkbench model={selectedModel} />
           )}
@@ -353,7 +371,7 @@ function App() {
           {!loading && !error && view === 'history' && (
             <ExperimentHistory
               allowServerDeletion={health?.environment !== 'modal'}
-              focusExperimentId={linkedExperimentId}
+              focusExperimentId={focusExperimentId}
             />
           )}
         </main>

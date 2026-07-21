@@ -51,6 +51,8 @@ export const fetchHealth = () => getJson<HealthResponse>('/health')
 export const fetchModelCatalog = () => getJson<ModelCatalog>('/api/models')
 export const fetchExperiments = (limit = 25) =>
   getJson<ExperimentList>(`/api/experiments?limit=${limit}`)
+export const fetchExperiment = (experimentId: string) =>
+  getJson<ExperimentEnvelope>(`/api/experiments/${experimentId}`)
 export const deleteServerExperiment = (experimentId: string) =>
   deleteRequest(`/api/experiments/${experimentId}`)
 export const runJacobianLens = async (request: JacobianLensRequest) => {

@@ -70,6 +70,61 @@ afterEach(() => {
 })
 
 describe('Mechanoscope model rack', () => {
+  it('turns a hypothesis into a truthful, approval-gated ChatGPT handoff', async () => {
+    const fetchMock = vi.fn((request: RequestInfo | URL) => {
+      const url = request.toString()
+      return url.endsWith('/health')
+        ? response({ status: 'ok', version: '0.1.0', environment: 'test' })
+        : response(catalog)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Qwen3 1.7B' })
+    await userEvent.click(screen.getByRole('button', { name: /Research copilot/i }))
+
+    expect(screen.getByRole('heading', { name: /From a hunch toauditable evidence/i })).toBeInTheDocument()
+    expect(screen.getByLabelText('Research copilot workflow')).toHaveTextContent('Human GPU checkpoint')
+    expect(screen.getByText('GPU stays asleep until you say yes.')).toBeInTheDocument()
+    expect(screen.getByText(/No plan is fabricated in the browser/i)).toBeInTheDocument()
+    expect(screen.getByText('bea87f1c-af24-48ea-af65-1f0030759a03')).toBeInTheDocument()
+    expect(screen.getByText(/not representation lineage/i)).toBeInTheDocument()
+  })
+
+  it('loads a verified copilot receipt directly even when it is outside recent history', async () => {
+    const receiptId = 'bea87f1c-af24-48ea-af65-1f0030759a03'
+    const fetchMock = vi.fn((request: RequestInfo | URL) => {
+      const url = request.toString()
+      if (url.endsWith('/health')) return response({ status: 'ok', version: '0.1.0', environment: 'modal' })
+      if (url.includes('/api/experiments?')) return response({ experiments: [], total: 0 })
+      if (url.endsWith(`/api/experiments/${receiptId}`)) {
+        return response({
+          schema_version: 1,
+          experiment_id: receiptId,
+          technique_id: 'jacobian_lens',
+          status: 'complete',
+          started_at: '2026-07-21T18:33:27Z',
+          finished_at: '2026-07-21T18:33:29Z',
+          request: { technique_id: 'jacobian_lens', input: { model_key: 'qwen3-1.7b', prompt: 'Test' } },
+          result: { model_key: 'qwen3-1.7b', prompt: 'Test' },
+          parent_experiment_id: null,
+          lineage_operation: null,
+        })
+      }
+      return response(catalog)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Qwen3 1.7B' })
+    await userEvent.click(screen.getByRole('button', { name: /Research copilot/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Inspect J-Lens receipt →' }))
+
+    expect(await screen.findByText('bea87f1c')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Jacobian Lens' })).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/api/experiments/${receiptId}`), expect.anything())
+  })
+
   it('selects the available default and explains gated model access', async () => {
     const fetchMock = vi.fn((request: RequestInfo | URL) => {
       const url = request.toString()
